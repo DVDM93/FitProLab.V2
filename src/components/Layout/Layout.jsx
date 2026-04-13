@@ -3,10 +3,10 @@ import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import './Layout.css';
 
-export default function Layout({ children, view, setView }) {
+export default function Layout({ children, view }) {
   return (
     <div className="layout-container">
-      <Sidebar view={view} setView={setView} />
+      <Sidebar view={view} />
       <div className="main-wrapper">
         <Topbar view={view} />
         <main className="content-area">

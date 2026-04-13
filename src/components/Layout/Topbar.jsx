@@ -1,7 +1,14 @@
 import React from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import './Topbar.css';
 
 export default function Topbar({ view }) {
+  const { currentUser, userRole } = useAuth();
+  
+  // Extract first letter for avatar or fallback
+  const firstLetter = currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : (view === 'admin' ? 'A' : 'M');
+  const displayName = currentUser?.displayName || currentUser?.email || (view === 'admin' ? 'Utente Admin' : 'Membro');
+
   return (
     <header className="topbar">
       <div className="topbar-search">
@@ -14,11 +21,11 @@ export default function Topbar({ view }) {
         </div>
         <div className="user-profile">
           <div className="avatar">
-            {view === 'admin' ? 'A' : 'M'}
+            {firstLetter}
           </div>
           <div className="user-info">
-            <span className="user-name">{view === 'admin' ? 'Utente Admin' : 'Mario Rossi'}</span>
-            <span className="user-role">{view === 'admin' ? 'Proprietario' : 'Membro Pro'}</span>
+            <span className="user-name">{displayName}</span>
+            <span className="user-role">{userRole === 'admin' ? 'Amministratore' : 'Utente'}</span>
           </div>
         </div>
       </div>

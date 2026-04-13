@@ -1,15 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import './Members.css';
 
 export default function MembersList() {
-  const members = [
-    { id: 'M-001', name: 'Mario Rossi', email: 'mario.r@test.com', plan: 'Pro', status: 'Attivo', joinDate: '12 Gen 2026' },
-    { id: 'M-002', name: 'Elisa Bianchi', email: 'elisa.b@test.com', plan: 'Basic', status: 'In Scadenza', joinDate: '05 Mar 2026' },
-    { id: 'M-003', name: 'Luca Verdi', email: 'luca.v@test.com', plan: 'Pro', status: 'Inattivo', joinDate: '20 Nov 2025' },
-    { id: 'M-004', name: 'Giulia Neri', email: 'giulia.n@test.com', plan: 'Basic', status: 'Attivo', joinDate: '10 Feb 2026' },
-    { id: 'M-005', name: 'Andrea Brambilla', email: 'andrea.b@test.com', plan: 'Pro', status: 'Attivo', joinDate: '01 Apr 2026' },
-  ];
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchMembers() {
+      try {
+        // Only fetch users that are 'member'
+        const q = query(collection(db, 'users'), where('role', '==', 'member'));
+        const querySnapshot = await getDocs(q);
+        const membersData = [];
+        querySnapshot.forEach((doc) => {
+          membersData.push({ id: doc.id, ...doc.data() });
+        });
+        setMembers(membersData);
+      } catch (error) {
+        console.error("Errore nel recuperare i membri:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchMembers();
+  }, []);
 
   return (
     <div className="members-container">
@@ -38,24 +56,30 @@ export default function MembersList() {
             </tr>
           </thead>
           <tbody>
-            {members.map(member => (
-              <tr key={member.id}>
-                <td className="text-muted">{member.id}</td>
-                <td className="font-bold">{member.name}</td>
-                <td>{member.email}</td>
-                <td><span className="badge plan-badge">{member.plan}</span></td>
-                <td className="text-muted">{member.joinDate}</td>
-                <td>
-                  <span className={`status-indicator ${member.status === 'Attivo' ? 'active' : member.status === 'In Scadenza' ? 'expiring' : 'inactive'}`}>
-                    {member.status}
-                  </span>
-                </td>
-                <td>
-                  <Link to={`/admin/members/${member.id}`} className="icon-btn" title="Vedi Dettagli">👁️</Link>
-                  <button className="icon-btn">✏️</button>
-                </td>
-              </tr>
-            ))}
+            {loading ? (
+              <tr><td colSpan="7" style={{textAlign: 'center', padding: '20px'}}>Caricamento...</td></tr>
+            ) : members.length === 0 ? (
+              <tr><td colSpan="7" style={{textAlign: 'center', padding: '20px'}}>Nessun membro trovato. Registra il primo membro!</td></tr>
+            ) : (
+              members.map(member => (
+                <tr key={member.id}>
+                  <td className="text-muted" title={member.id}>{member.id.substring(0, 6)}...</td>
+                  <td className="font-bold">{member.name || 'Utente senza nome'}</td>
+                  <td>{member.email}</td>
+                  <td><span className="badge plan-badge">{member.plan || 'N/A'}</span></td>
+                  <td className="text-muted">{member.joinDate ? new Date(member.joinDate).toLocaleDateString() : 'N/A'}</td>
+                  <td>
+                    <span className={`status-indicator ${member.status === 'Attivo' ? 'active' : member.status === 'In Scadenza' ? 'expiring' : 'inactive'}`}>
+                      {member.status || 'Attivo'}
+                    </span>
+                  </td>
+                  <td>
+                    <Link to={`/admin/members/${member.id}`} className="icon-btn" title="Vedi Dettagli">👁️</Link>
+                    <button className="icon-btn">✏️</button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

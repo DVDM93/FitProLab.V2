@@ -1,13 +1,21 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import './Sidebar.css';
 import logo from '../../assets/logo.png';
 
-export default function Sidebar({ view, setView }) {
+export default function Sidebar({ view }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
-  const handleSwitchView = (newView) => {
-    setView(newView);
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      console.error('Failed to log out', err);
+    }
   };
 
   const isActive = (path) => {
@@ -21,22 +29,6 @@ export default function Sidebar({ view, setView }) {
       </div>
       
       <nav className="sidebar-nav">
-        <div className="nav-section">
-          <p className="nav-label">Cambia Vista</p>
-          <button 
-            className={`nav-btn ${view === 'admin' ? 'active' : ''}`}
-            onClick={() => handleSwitchView('admin')}
-          >
-            Dashboard Admin
-          </button>
-          <button 
-            className={`nav-btn ${view === 'member' ? 'active' : ''}`}
-            onClick={() => handleSwitchView('member')}
-          >
-            App Membri
-          </button>
-        </div>
-
         {view === 'admin' && (
           <div className="nav-section">
             <p className="nav-label">Menu Admin</p>
@@ -61,7 +53,7 @@ export default function Sidebar({ view, setView }) {
       </nav>
 
       <div className="sidebar-footer">
-        <button className="secondary logout-btn">Esci</button>
+        <button className="secondary logout-btn" onClick={handleLogout}>Esci</button>
       </div>
     </aside>
   );

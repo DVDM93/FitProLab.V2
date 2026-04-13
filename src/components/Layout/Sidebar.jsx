@@ -41,10 +41,10 @@ export default function Sidebar({ view, setView }) {
           <div className="nav-section">
             <p className="nav-label">Menu Admin</p>
             <Link to="/admin" className={`nav-link ${isActive('/admin')}`}>Panoramica</Link>
-            <Link to="/admin/members" className={`nav-link ${isActive('/admin/members')}`}>Lista Membri</Link>
+            <Link to="/admin/members" className={`nav-link ${location.pathname.startsWith('/admin/members') ? 'active' : ''}`}>Lista Membri</Link>
             <Link to="/admin/calendar" className={`nav-link ${isActive('/admin/calendar')}`}>Corsi & Calendario</Link>
-            <a href="#" className="nav-link">Abbonamenti</a>
-            <a href="#" className="nav-link">Comunicazioni</a>
+            <Link to="/admin/subscriptions" className={`nav-link ${isActive('/admin/subscriptions')}`}>Abbonamenti (Stripe)</Link>
+            <Link to="/admin/communications" className={`nav-link ${isActive('/admin/communications')}`}>Comunicazioni</Link>
           </div>
         )}
 
@@ -55,7 +55,7 @@ export default function Sidebar({ view, setView }) {
             <Link to="/member/calendar" className={`nav-link ${isActive('/member/calendar')}`}>Prenota un Corso</Link>
             <a href="#" className="nav-link">Check-in</a>
             <a href="#" className="nav-link">I Miei PR</a>
-            <a href="#" className="nav-link">Classifica</a>
+            <Link to="/member/leaderboard" className={`nav-link ${isActive('/member/leaderboard')}`}>Classifica</Link>
           </div>
         )}
       </nav>

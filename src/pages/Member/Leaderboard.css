@@ -1,0 +1,94 @@
+.leaderboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.leaderboard-filters {
+  display: flex;
+  gap: 16px;
+  background: var(--color-dark);
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.filter-btn {
+  flex: 1;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+.filter-btn.active {
+  background: rgba(255, 94, 0, 0.1);
+  color: var(--color-orange);
+}
+
+.board-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.board-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.board-table th {
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.02);
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.board-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  vertical-align: middle;
+}
+
+.board-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.highlight-row {
+  background: rgba(255, 94, 0, 0.05);
+}
+.highlight-row:hover { background: rgba(255, 94, 0, 0.08) !important; }
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  font-weight: 800;
+  color: var(--color-text-muted);
+}
+
+.rank-1 { background: linear-gradient(135deg, #FFD700, #FDB931); color: #000; box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); }
+.rank-2 { background: linear-gradient(135deg, #E0E0E0, #BDBDBD); color: #000; }
+.rank-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); color: #fff; }
+
+.athlete-name {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.crown {
+  margin-left: 8px;
+}
+
+.stat-value {
+  font-weight: 900;
+  font-size: 20px;
+  color: var(--color-orange);
+}
+
+.text-right { text-align: right !important; }

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './Members.css';
 
 export default function MembersList() {
@@ -50,7 +51,7 @@ export default function MembersList() {
                   </span>
                 </td>
                 <td>
-                  <button className="icon-btn">👁️</button>
+                  <Link to={`/admin/members/${member.id}`} className="icon-btn" title="Vedi Dettagli">👁️</Link>
                   <button className="icon-btn">✏️</button>
                 </td>
               </tr>

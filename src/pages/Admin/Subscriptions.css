@@ -1,0 +1,129 @@
+.subscriptions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.subscriptions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stripe-btn {
+  background: #635bff;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(99, 91, 255, 0.3);
+}
+
+.stripe-btn:hover {
+  background: #5851df;
+  box-shadow: 0 6px 20px rgba(99, 91, 255, 0.4);
+}
+
+.stripe-icon {
+  font-weight: 900;
+  font-size: 18px;
+  font-family: serif;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  align-items: center;
+  margin-top: 24px;
+}
+
+.plan-card {
+  background: var(--color-dark);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  transition: transform 0.3s ease;
+  position: relative;
+}
+
+.plan-card:hover {
+  transform: translateY(-8px);
+}
+
+.plan-card.featured {
+  border-color: var(--color-orange);
+  transform: scale(1.05);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.plan-card.featured:hover {
+  transform: scale(1.05) translateY(-8px);
+}
+
+.featured-badge {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-orange);
+  color: white;
+  padding: 4px 16px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  border-radius: 0 0 8px 8px;
+}
+
+.plan-header {
+  padding: 32px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.plan-header h3 {
+  font-size: 20px;
+  color: var(--color-text-muted);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.plan-header .price {
+  font-size: 48px;
+  font-weight: 900;
+  color: var(--color-text);
+}
+
+.plan-header .price span {
+  font-size: 16px;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.plan-body {
+  padding: 32px;
+}
+
+.plan-body ul {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.plan-body ul li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.plan-body ul li::before {
+  content: '✓';
+  color: var(--color-orange);
+  font-weight: bold;
+}

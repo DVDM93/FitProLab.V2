@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import CheckInModal from '../components/CheckInModal';
 import './Dashboard.css';
 
 export default function MemberDashboard() {
+  const [isQrOpen, setIsQrOpen] = useState(false);
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
@@ -9,8 +12,10 @@ export default function MemberDashboard() {
           <h1 className="title">La Mia Dashboard</h1>
           <p className="subtitle">Pronto a dare il massimo oggi?</p>
         </div>
-        <button className="primary-btn">Check-in QR</button>
+        <button className="primary-btn" onClick={() => setIsQrOpen(true)}>Check-in QR</button>
       </div>
+      
+      <CheckInModal isOpen={isQrOpen} onClose={() => setIsQrOpen(false)} />
 
       <div className="content-grid two-cols">
         <div className="card wod-card">

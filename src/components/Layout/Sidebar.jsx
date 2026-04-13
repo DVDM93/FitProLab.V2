@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 import logo from '../../assets/logo.png';
 
 export default function Sidebar({ view, setView }) {
+  const location = useLocation();
+
+  const handleSwitchView = (newView) => {
+    setView(newView);
+  };
+
+  const isActive = (path) => {
+    return location.pathname === path ? 'active' : '';
+  };
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -14,13 +25,13 @@ export default function Sidebar({ view, setView }) {
           <p className="nav-label">Cambia Vista</p>
           <button 
             className={`nav-btn ${view === 'admin' ? 'active' : ''}`}
-            onClick={() => setView('admin')}
+            onClick={() => handleSwitchView('admin')}
           >
             Dashboard Admin
           </button>
           <button 
             className={`nav-btn ${view === 'member' ? 'active' : ''}`}
-            onClick={() => setView('member')}
+            onClick={() => handleSwitchView('member')}
           >
             App Membri
           </button>
@@ -29,9 +40,9 @@ export default function Sidebar({ view, setView }) {
         {view === 'admin' && (
           <div className="nav-section">
             <p className="nav-label">Menu Admin</p>
-            <a href="#" className="nav-link active">Panoramica</a>
-            <a href="#" className="nav-link">Membri</a>
-            <a href="#" className="nav-link">Corsi & Calendario</a>
+            <Link to="/admin" className={`nav-link ${isActive('/admin')}`}>Panoramica</Link>
+            <Link to="/admin/members" className={`nav-link ${isActive('/admin/members')}`}>Lista Membri</Link>
+            <Link to="/admin/calendar" className={`nav-link ${isActive('/admin/calendar')}`}>Corsi & Calendario</Link>
             <a href="#" className="nav-link">Abbonamenti</a>
             <a href="#" className="nav-link">Comunicazioni</a>
           </div>
@@ -40,8 +51,8 @@ export default function Sidebar({ view, setView }) {
         {view === 'member' && (
           <div className="nav-section">
             <p className="nav-label">Menu Membro</p>
-            <a href="#" className="nav-link active">La Mia Dashboard</a>
-            <a href="#" className="nav-link">Prenota un Corso</a>
+            <Link to="/member" className={`nav-link ${isActive('/member')}`}>La Mia Dashboard</Link>
+            <Link to="/member/calendar" className={`nav-link ${isActive('/member/calendar')}`}>Prenota un Corso</Link>
             <a href="#" className="nav-link">Check-in</a>
             <a href="#" className="nav-link">I Miei PR</a>
             <a href="#" className="nav-link">Classifica</a>

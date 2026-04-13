@@ -1,0 +1,111 @@
+.members-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.members-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.table-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.search-input {
+  background-color: var(--color-dark);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: var(--color-text);
+  width: 250px;
+}
+
+.search-input:focus {
+  border-color: var(--color-orange);
+  outline: none;
+}
+
+.table-wrapper {
+  background-color: var(--color-dark);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.members-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.members-table th {
+  padding: 16px 24px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.members-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  vertical-align: middle;
+}
+
+.members-table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.text-muted { color: var(--color-text-muted); }
+.font-bold { font-weight: 600; color: var(--color-text); }
+
+.plan-badge {
+  background: rgba(255, 94, 0, 0.1);
+  color: var(--color-orange);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-indicator::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.status-indicator.active::before { background-color: #00cc66; box-shadow: 0 0 5px #00cc66; }
+.status-indicator.expiring::before { background-color: var(--color-orange); box-shadow: 0 0 5px var(--color-orange); }
+.status-indicator.inactive::before { background-color: var(--color-magenta); box-shadow: 0 0 5px var(--color-magenta); }
+
+.icon-btn {
+  background: transparent;
+  padding: 8px;
+  font-size: 16px;
+  color: var(--color-text-muted);
+  border-radius: 8px;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  box-shadow: none;
+}

@@ -81,3 +81,77 @@
 .mini-stat .label { font-size: 12px; color: var(--color-text-muted); text-transform: uppercase; }
 
 .mb-2 { margin-bottom: 8px; }
+
+/* Inline editing styles */
+.edit-input {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255, 94, 0, 0.4);
+  border-radius: 8px;
+  color: var(--color-text);
+  font-size: 1.2rem;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 6px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.edit-input.small {
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+.edit-input:focus {
+  border-color: var(--color-orange);
+  box-shadow: 0 0 0 2px rgba(255,94,0,0.15);
+}
+
+.edit-select {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255, 94, 0, 0.4);
+  border-radius: 8px;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 8px 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+.edit-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.edit-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Additional status states */
+.status-box.expiring {
+  background: rgba(255, 180, 0, 0.1);
+  border-color: rgba(255, 180, 0, 0.3);
+}
+.status-box.expiring .status-val { color: #ffb400; font-size: 24px; font-weight: 800; }
+
+.status-box.inactive {
+  background: rgba(255, 70, 70, 0.1);
+  border-color: rgba(255, 70, 70, 0.3);
+}
+.status-box.inactive .status-val { color: #ff4646; font-size: 24px; font-weight: 800; }
+
+.loading-text {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 40px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 24px;
+}
+

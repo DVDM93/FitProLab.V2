@@ -25,7 +25,7 @@ export default function Sidebar({ view }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <img src={logo} alt="Fit Pro Lab Logo" className="logo-image" />
+        <img src={logo} alt="Fit Pro Lab Logo" className="sidebar-logo" />
       </div>
       
       <nav className="sidebar-nav">

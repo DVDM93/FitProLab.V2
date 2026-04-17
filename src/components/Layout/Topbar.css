@@ -8,10 +8,23 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.topbar-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 14px;
+  pointer-events: none;
+}
+
 .topbar-search input {
   background-color: var(--color-dark);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 12px 20px;
+  padding: 12px 20px 12px 38px;
   border-radius: 20px;
   width: 300px;
   color: var(--color-text);

@@ -12,12 +12,12 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.logo-image {
-  width: 100%;
-  max-width: 180px;
+.sidebar-logo {
+  width: 160px;
   height: auto;
   display: block;
   margin: 0 auto;
+  object-fit: contain;
 }
 
 .sidebar-nav {

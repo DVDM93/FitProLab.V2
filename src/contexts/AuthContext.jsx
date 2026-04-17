@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -17,23 +17,26 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState(null); // 'admin' or 'member'
+  const [userData, setUserData] = useState(null); // Full Firestore user document
   const [loading, setLoading] = useState(true);
 
   async function signup(email, password, name, role = 'member') {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
-    // Create the user document in Firestore
-    await setDoc(doc(db, 'users', user.uid), {
+    const newUserData = {
       name,
       email,
       role,
-      plan: 'Basic', // default plan
+      plan: 'Basic',
       joinDate: new Date().toISOString(),
-      status: 'Attivo'
-    });
+      status: 'Attivo',
+    };
+
+    await setDoc(doc(db, 'users', user.uid), newUserData);
 
     setUserRole(role);
+    setUserData(newUserData);
     return user;
   }
 
@@ -42,26 +45,46 @@ export function AuthProvider({ children }) {
   }
 
   function logout() {
+    setUserData(null);
+    setUserRole(null);
     return signOut(auth);
   }
+
+  // Can be called after profile updates to refresh userData in context
+  const refreshUserData = useCallback(async (uid) => {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        setUserData({ id: userDoc.id, ...data });
+        setUserRole(data.role);
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        // Fetch role from Firestore
         try {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
-            setUserRole(userDoc.data().role);
+            const data = userDoc.data();
+            setUserData({ id: userDoc.id, ...data });
+            setUserRole(data.role);
           } else {
-            setUserRole('member'); // fallback
+            // Fallback for users without a Firestore document
+            setUserData({ id: user.uid, email: user.email, role: 'member' });
+            setUserRole('member');
           }
         } catch (error) {
-          console.error("Error fetching user role", error);
+          console.error('Error fetching user data:', error);
           setUserRole('member');
         }
       } else {
+        setUserData(null);
         setUserRole(null);
       }
       setLoading(false);
@@ -73,9 +96,11 @@ export function AuthProvider({ children }) {
   const value = {
     currentUser,
     userRole,
+    userData,       // Full user profile (name, plan, status, phone, ecc.)
+    refreshUserData,
     login,
     signup,
-    logout
+    logout,
   };
 
   return (

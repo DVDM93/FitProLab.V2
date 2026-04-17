@@ -4,13 +4,40 @@
   width: 100%;
   max-width: 400px;
   border-radius: var(--border-radius);
-  padding: 40px 32px;
+  padding: 36px 32px;
   position: relative;
-  box-shadow: 0 0 50px rgba(255, 94, 0, 0.2);
+  box-shadow: 0 0 60px rgba(255, 94, 0, 0.2), 0 20px 40px rgba(0,0,0,0.5);
+  animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.text-center {
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.checkin-header {
   text-align: center;
+  margin-bottom: 8px;
+}
+
+.checkin-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-orange);
+  margin: 0;
+}
+
+.modal-title {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 4px 0;
+}
+
+.modal-subtitle {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  margin-bottom: 0;
 }
 
 .qr-container {
@@ -18,22 +45,50 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin: 32px 0;
+  margin: 28px 0;
   padding: 24px;
   background: rgba(255, 255, 255, 0.02);
   border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.05);
+  gap: 12px;
 }
 
 .qr-wrapper {
   background: white;
   padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
 .qr-text-id {
   font-family: monospace;
   color: var(--color-text-muted);
-  font-size: 14px;
-  letter-spacing: 2px;
+  font-size: 13px;
+  letter-spacing: 3px;
 }
+
+.qr-plan-badge {
+  background: rgba(255, 94, 0, 0.1);
+  color: var(--color-orange);
+  border: 1px solid rgba(255,94,0,0.3);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 18px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: none;
+}
+.close-btn:hover { color: white; background: rgba(255, 255, 255, 0.1); box-shadow: none; }
+
+.full-width { width: 100%; font-size: 16px; padding: 14px; }

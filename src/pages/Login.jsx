@@ -40,7 +40,10 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1 className="login-logo">FIT <span className="text-orange">PRO</span> LAB</h1>
+        <div className="login-logo-container">
+          <img src="/src/assets/logo.png" alt="Fit Pro Lab Logo" className="logo-image" />
+          <h1 className="login-logo">FIT <span className="text-orange">PRO</span> LAB</h1>
+        </div>
         <h2 className="login-title">{isLogin ? 'Accedi al tuo account' : 'Crea un nuovo account'}</h2>
         
         {error && <div className="login-error">{error}</div>}

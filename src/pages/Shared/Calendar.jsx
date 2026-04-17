@@ -21,7 +21,7 @@ function toDateStr(date) {
 }
 
 export default function Calendar({ role }) {
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +69,7 @@ export default function Calendar({ role }) {
     if (!currentUser) return;
     setActionLoading(true);
     try {
-      await bookClass(currentUser.uid, { ...cls, date: dateStr });
+      await bookClass(currentUser.uid, { ...cls, date: dateStr }, userData?.name || currentUser?.email || '');
       showFeedback('success', `Prenotato: ${cls.title} alle ${cls.time} ✓`);
       await loadClasses();
       setUserBooking({ classId: cls.id, classTitle: cls.title, date: dateStr, status: 'confirmed' });

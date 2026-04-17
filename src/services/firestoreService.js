@@ -80,7 +80,7 @@ export async function addClass(classData) {
 }
 
 export async function updateClass(classId, data) {
-  await updateDoc(doc(db, 'classes'), data);
+  await updateDoc(doc(db, 'classes', classId), data);
 }
 
 export async function deleteClass(classId) {
@@ -114,10 +114,11 @@ export async function getUpcomingBooking(userId) {
   return { id: snap.docs[0].id, ...snap.docs[0].data() };
 }
 
-export async function bookClass(userId, classData) {
+export async function bookClass(userId, classData, userName = '') {
   // Add booking record
   const booking = await addDoc(collection(db, 'bookings'), {
     userId,
+    userName,
     classId: classData.id,
     classTitle: classData.title,
     coach: classData.coach,

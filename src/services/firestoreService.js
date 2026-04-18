@@ -10,7 +10,6 @@ import {
   where,
   orderBy,
   limit,
-  getCountFromServer,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -23,6 +22,7 @@ export async function getUserData(uid) {
 }
 
 export async function getAllMembers() {
+  // Single-field where — no composite index needed
   const q = query(collection(db, 'users'), where('role', '==', 'member'));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -33,27 +33,17 @@ export async function updateMember(uid, data) {
 }
 
 export async function getActiveMemberCount() {
-  const q = query(
-    collection(db, 'users'),
-    where('role', '==', 'member'),
-    where('status', '==', 'Attivo')
-  );
-  const snap = await getCountFromServer(q);
-  return snap.data().count;
+  // Fetch all members, filter in JS — no composite index
+  const members = await getAllMembers();
+  return members.filter((m) => m.status === 'Attivo').length;
 }
 
 export async function getAtRiskMembers() {
-  // Members inactive for more than 14 days
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - 14);
-  const q = query(
-    collection(db, 'users'),
-    where('role', '==', 'member'),
-    where('status', '==', 'Attivo')
-  );
-  const snap = await getDocs(q);
-  const members = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const members = await getAllMembers();
   return members.filter((m) => {
+    if (m.status !== 'Attivo') return false;
     if (!m.lastCheckIn) return true;
     return new Date(m.lastCheckIn) < cutoff;
   });
@@ -62,14 +52,12 @@ export async function getAtRiskMembers() {
 // ─── CLASSES ────────────────────────────────────────────────────────────────
 
 export async function getClassesForDate(dateStr) {
-  // dateStr format: 'YYYY-MM-DD'
-  const q = query(
-    collection(db, 'classes'),
-    where('date', '==', dateStr),
-    orderBy('time', 'asc')
-  );
+  // Single-field where only — no composite index needed
+  const q = query(collection(db, 'classes'), where('date', '==', dateStr));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const classes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Sort by time in JS
+  return classes.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 }
 
 export async function addClass(classData) {
@@ -90,32 +78,26 @@ export async function deleteClass(classId) {
 // ─── BOOKINGS ───────────────────────────────────────────────────────────────
 
 export async function getUserBookings(userId) {
-  const q = query(
-    collection(db, 'bookings'),
-    where('userId', '==', userId),
-    orderBy('date', 'desc')
-  );
+  // Single-field where, sort in JS
+  const q = query(collection(db, 'bookings'), where('userId', '==', userId));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const bookings = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return bookings.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 }
 
 export async function getUpcomingBooking(userId) {
   const today = new Date().toISOString().split('T')[0];
-  const q = query(
-    collection(db, 'bookings'),
-    where('userId', '==', userId),
-    where('date', '>=', today),
-    where('status', '==', 'confirmed'),
-    orderBy('date', 'asc'),
-    limit(1)
-  );
+  // Single-field where, filter + sort in JS
+  const q = query(collection(db, 'bookings'), where('userId', '==', userId));
   const snap = await getDocs(q);
-  if (snap.empty) return null;
-  return { id: snap.docs[0].id, ...snap.docs[0].data() };
+  const upcoming = snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((b) => b.status === 'confirmed' && b.date >= today)
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  return upcoming.length > 0 ? upcoming[0] : null;
 }
 
 export async function bookClass(userId, classData, userName = '') {
-  // Add booking record
   const booking = await addDoc(collection(db, 'bookings'), {
     userId,
     userName,
@@ -136,10 +118,15 @@ export async function bookClass(userId, classData, userName = '') {
 
 export async function cancelBooking(bookingId, classId, currentBooked) {
   await updateDoc(doc(db, 'bookings', bookingId), { status: 'cancelled' });
-  if (classId && currentBooked > 0) {
-    await updateDoc(doc(db, 'classes', classId), {
-      booked: currentBooked - 1,
-    });
+  if (classId) {
+    // Fetch current class to get accurate booked count
+    const classSnap = await getDoc(doc(db, 'classes', classId));
+    if (classSnap.exists()) {
+      const current = classSnap.data().booked || 0;
+      await updateDoc(doc(db, 'classes', classId), {
+        booked: Math.max(0, current - 1),
+      });
+    }
   }
 }
 
@@ -147,12 +134,10 @@ export async function cancelBooking(bookingId, classId, currentBooked) {
 
 export async function getTodayCheckInCount() {
   const today = new Date().toISOString().split('T')[0];
-  const q = query(
-    collection(db, 'checkins'),
-    where('date', '==', today)
-  );
-  const snap = await getCountFromServer(q);
-  return snap.data().count;
+  // Single-field where — no composite index
+  const q = query(collection(db, 'checkins'), where('date', '==', today));
+  const snap = await getDocs(q);
+  return snap.size;
 }
 
 export async function addCheckIn(userId) {
@@ -162,23 +147,20 @@ export async function addCheckIn(userId) {
     date: today,
     timestamp: serverTimestamp(),
   });
-  // Update lastCheckIn on user
+  // Update lastCheckIn on user document
   await updateDoc(doc(db, 'users', userId), {
     lastCheckIn: today,
-    checkInCount: serverTimestamp(), // will be handled properly
   });
 }
 
 // ─── SCORES / PR ─────────────────────────────────────────────────────────────
 
 export async function getUserScores(userId) {
-  const q = query(
-    collection(db, 'scores'),
-    where('userId', '==', userId),
-    orderBy('date', 'desc')
-  );
+  // Single-field where, sort in JS
+  const q = query(collection(db, 'scores'), where('userId', '==', userId));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const scores = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return scores.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 }
 
 export async function addScore(userId, scoreData) {
@@ -191,24 +173,65 @@ export async function addScore(userId, scoreData) {
 }
 
 export async function getLeaderboard(exerciseName) {
+  // Single-field where, sort in JS — no composite index
   const q = query(
     collection(db, 'scores'),
-    where('exerciseName', '==', exerciseName),
-    orderBy('value', 'desc'),
-    limit(20)
+    where('exerciseName', '==', exerciseName)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const scores = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Sort: higher value = better (for weight exercises)
+  // Per-exercise ordering can be customized later
+  return scores
+    .sort((a, b) => (b.value || 0) - (a.value || 0))
+    .slice(0, 20);
 }
 
 // ─── RECENT ACTIVITY (Admin) ─────────────────────────────────────────────────
 
 export async function getRecentActivity(limitCount = 10) {
+  // No orderBy to avoid needing an index — sort in JS
+  const q = query(collection(db, 'bookings'), limit(50));
+  const snap = await getDocs(q);
+  const bookings = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Sort by createdAt descending in JS
+  return bookings
+    .filter((b) => b.createdAt)
+    .sort((a, b) => {
+      const tA = a.createdAt?.toDate?.() || new Date(0);
+      const tB = b.createdAt?.toDate?.() || new Date(0);
+      return tB - tA;
+    })
+    .slice(0, limitCount);
+}
+
+// ─── NOTIFICATIONS ──────────────────────────────────────────────────────────
+
+export async function getTodayNewBookingsCount() {
+  const today = new Date().toISOString().split('T')[0];
   const q = query(
     collection(db, 'bookings'),
-    orderBy('createdAt', 'desc'),
-    limit(limitCount)
+    where('date', '==', today),
+    where('status', '==', 'confirmed')
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.size;
 }
+
+// ─── WOD (Workout of the Day) ───────────────────────────────────────────────
+
+export async function getTodayWOD() {
+  const today = new Date().toISOString().split('T')[0];
+  const q = query(collection(db, 'wods'), where('date', '==', today));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  return { id: snap.docs[0].id, ...snap.docs[0].data() };
+}
+
+export async function addWOD(wodData) {
+  return await addDoc(collection(db, 'wods'), {
+    ...wodData,
+    createdAt: serverTimestamp(),
+  });
+}
+

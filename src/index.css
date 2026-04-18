@@ -108,3 +108,115 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
 }
+
+/* ── Global Responsive ─────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  /* Dashboard two-column → single column */
+  .content-grid.two-cols {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Stats grid: 2 columns instead of 4 on tablet */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Comms grid */
+  .comms-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Detail grid */
+  .detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Page titles */
+  .title {
+    font-size: 24px !important;
+  }
+
+  /* Single column for all grids */
+  .stats-grid,
+  .plans-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Dashboard header stack */
+  .dashboard-header,
+  .members-header,
+  .subscriptions-header,
+  .leaderboard-header,
+  .calendar-header,
+  .comms-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+
+  /* Form rows → single column */
+  .form-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Table wrapper → horizontal scroll */
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .members-table {
+    min-width: 600px;
+  }
+
+  /* Revenue bar → stacked */
+  .revenue-bar {
+    flex-direction: column;
+    height: auto;
+    gap: 6px;
+  }
+
+  .revenue-segment {
+    min-width: 0;
+    flex: 1 !important;
+    border-radius: 8px;
+    padding: 10px 16px;
+  }
+
+  /* Filter buttons wrap */
+  .leaderboard-filters {
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    min-width: calc(50% - 8px);
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  /* Card padding reduction */
+  .card {
+    padding: 16px !important;
+  }
+
+  /* Login card full width */
+  .login-card {
+    padding: 32px 24px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .channel-selector {
+    flex-direction: column;
+  }
+
+  .filter-btn {
+    min-width: 100%;
+  }
+}
+

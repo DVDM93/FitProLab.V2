@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getUpcomingBooking, cancelBooking, getUserScores } from '../services/firestoreService';
+import { getUpcomingBooking, cancelBooking, getUserScores, getTodayWOD } from '../services/firestoreService';
 import CheckInModal from '../components/CheckInModal';
 import './Dashboard.css';
+
+const DEFAULT_WOD = {
+  name: 'FRAN',
+  type: '21-15-9 Ripetizioni per Tempo',
+  exercises: ['Thrusters (43/29 kg)', 'Pull-ups'],
+};
 
 export default function MemberDashboard() {
   const { currentUser, userData } = useAuth();
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [nextBooking, setNextBooking] = useState(null);
   const [scores, setScores] = useState([]);
+  const [wod, setWod] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cancelLoading, setCancelLoading] = useState(false);
 
@@ -23,12 +30,14 @@ export default function MemberDashboard() {
     if (!currentUser) return;
     async function load() {
       try {
-        const [booking, userScores] = await Promise.all([
+        const [booking, userScores, todayWod] = await Promise.all([
           getUpcomingBooking(currentUser.uid),
           getUserScores(currentUser.uid),
+          getTodayWOD(),
         ]);
         setNextBooking(booking);
         setScores(userScores.slice(0, 4));
+        setWod(todayWod);
       } catch (err) {
         console.error('Errore caricamento dashboard membro:', err);
       } finally {
@@ -54,8 +63,13 @@ export default function MemberDashboard() {
   const PR_ICONS = {
     'Back Squat': '🏋️', 'Front Squat': '🏋️', 'Deadlift': '💪',
     'Snatch': '🏋️', 'Clean & Jerk': '🏋️', 'FRAN': '⏱️',
-    'Corsa 5k': '🏃', 'default': '🎯',
+    'Corsa 5k': '🏃', 'back_squat': '🏋️', 'deadlift': '💪',
+    'snatch': '🏋️', 'run_5k': '🏃', 'fran': '⏱️', 'default': '🎯',
   };
+
+  // Use WOD from Firestore or fallback to default
+  const activeWod = wod || DEFAULT_WOD;
+  const exercises = wod?.exercises || DEFAULT_WOD.exercises;
 
   return (
     <div className="dashboard-container">
@@ -76,14 +90,21 @@ export default function MemberDashboard() {
       <div className="content-grid two-cols">
         {/* WOD del Giorno */}
         <div className="card wod-card">
-          <h3 className="card-title">Allenamento del Giorno</h3>
+          <div className="card-header-row">
+            <h3 className="card-title">Allenamento del Giorno</h3>
+            {wod && <span className="wod-source-badge">🔥 Dal box</span>}
+          </div>
           <div className="wod-content">
-            <h4>"FRAN"</h4>
-            <p className="wod-type">21-15-9 Ripetizioni per Tempo</p>
+            <h4>"{activeWod.name}"</h4>
+            <p className="wod-type">{activeWod.type || activeWod.scheme}</p>
             <ul>
-              <li>Thrusters (43/29 kg)</li>
-              <li>Pull-ups</li>
+              {(Array.isArray(exercises) ? exercises : [exercises]).map((ex, i) => (
+                <li key={i}>{ex}</li>
+              ))}
             </ul>
+            {activeWod.scoreType && (
+              <p className="wod-score-type">Score: {activeWod.scoreType}</p>
+            )}
           </div>
           <Link to="/member/calendar">
             <button className="secondary-btn full-width mt-4">Prenota una Classe</button>
@@ -101,13 +122,18 @@ export default function MemberDashboard() {
             <>
               <div className="next-class-box">
                 <div className="date-badge">
-                  <span className="day">{new Date(nextBooking.date).toLocaleDateString('it-IT', { weekday: 'short' }).toUpperCase()}</span>
+                  <span className="day">
+                    {new Date(nextBooking.date + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'short' }).toUpperCase()}
+                  </span>
                   <span className="time">{nextBooking.time || '—'}</span>
-                  <span className="day">{new Date(nextBooking.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}</span>
+                  <span className="day">
+                    {new Date(nextBooking.date + 'T12:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                  </span>
                 </div>
                 <div className="class-info">
                   <h4>{nextBooking.classTitle || 'Classe'}</h4>
                   <p>Coach {nextBooking.coach || '—'}</p>
+                  <span className="confirmed-badge">✓ Confermato</span>
                 </div>
               </div>
               <div className="actions mt-4">
@@ -154,6 +180,9 @@ export default function MemberDashboard() {
         ) : scores.length === 0 ? (
           <div className="no-pr-state">
             <p className="text-muted">Nessun PR registrato ancora. Vai ad allenarti! 💪</p>
+            <Link to="/member/leaderboard">
+              <button className="secondary-btn mt-4">Registra il tuo primo PR</button>
+            </Link>
           </div>
         ) : (
           <div className="pr-list">
@@ -163,8 +192,8 @@ export default function MemberDashboard() {
                   {PR_ICONS[s.exerciseName] || PR_ICONS['default']}
                 </div>
                 <div className="pr-details">
-                  <h4>{s.exerciseName}</h4>
-                  <p>{s.value}{s.unit || ''}</p>
+                  <h4>{s.label || s.exerciseName}</h4>
+                  <p>{s.value} <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--color-text-muted)' }}>{s.unit || ''}</span></p>
                 </div>
                 <div className="pr-date">
                   {new Date(s.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}

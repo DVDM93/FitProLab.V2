@@ -11,10 +11,41 @@
   flex-direction: column;
   overflow: hidden;
   background-color: var(--color-black);
+  min-width: 0; /* prevent flex overflow */
 }
 
 .content-area {
   flex: 1;
   overflow-y: auto;
   padding: 32px;
+}
+
+/* Mobile sidebar overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  z-index: 99;
+}
+
+/* ── Responsive breakpoints ─────────────────────────────── */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .content-area {
+    padding: 24px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .content-area {
+    padding: 16px;
+  }
 }

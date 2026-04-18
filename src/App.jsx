@@ -9,7 +9,6 @@ import AdminDashboard from './pages/AdminDashboard';
 import MemberDashboard from './pages/MemberDashboard';
 import MembersList from './pages/Admin/MembersList';
 import Calendar from './pages/Shared/Calendar';
-
 import MemberDetail from './pages/Admin/MemberDetail';
 import Communications from './pages/Admin/Communications';
 import Subscriptions from './pages/Admin/Subscriptions';
@@ -21,75 +20,62 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public */}
         <Route path="/login" element={<Login />} />
-        
-        {/* Protected layout routes */}
-        <Route 
-          path="/*" 
+
+        {/* Admin Layout — protetto, solo admin */}
+        <Route
+          path="/admin"
           element={
-            <ProtectedRoute>
-              {/* the Layout now automatically needs to know the userRole from auth */}
-              <Layout view={userRole} />
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Layout view="admin" />
             </ProtectedRoute>
           }
         >
-          {/* Admin Routes */}
-          <Route 
-            path="admin" 
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="admin/members" 
-            element={<ProtectedRoute allowedRoles={['admin']}><MembersList /></ProtectedRoute>} 
-          />
-          <Route 
-            path="admin/members/:id" 
-            element={<ProtectedRoute allowedRoles={['admin']}><MemberDetail /></ProtectedRoute>} 
-          />
-          <Route 
-            path="admin/calendar" 
-            element={<ProtectedRoute allowedRoles={['admin']}><Calendar role="admin" /></ProtectedRoute>} 
-          />
-          <Route 
-            path="admin/subscriptions" 
-            element={<ProtectedRoute allowedRoles={['admin']}><Subscriptions /></ProtectedRoute>} 
-          />
-          <Route 
-            path="admin/communications" 
-            element={<ProtectedRoute allowedRoles={['admin']}><Communications /></ProtectedRoute>} 
-          />
-          
-          {/* Member Routes */}
-          <Route 
-            path="member" 
-            element={
-              <ProtectedRoute allowedRoles={['member']}>
-                <MemberDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="member/calendar" 
-            element={<ProtectedRoute allowedRoles={['member']}><Calendar role="member" /></ProtectedRoute>} 
-          />
-          <Route 
-            path="member/leaderboard" 
-            element={<ProtectedRoute allowedRoles={['member']}><Leaderboard /></ProtectedRoute>} 
-          />
-
-          {/* Fallback route: redirect to correct dashboard based on role */}
-          <Route path="*" element={
-            <Navigate to={userRole === 'admin' ? '/admin' : '/member'} replace />
-          } />
+          <Route index element={<AdminDashboard />} />
+          <Route path="members" element={<MembersList />} />
+          <Route path="members/:id" element={<MemberDetail />} />
+          <Route path="calendar" element={<Calendar role="admin" />} />
+          <Route path="subscriptions" element={<Subscriptions />} />
+          <Route path="communications" element={<Communications />} />
         </Route>
+
+        {/* Member Layout — protetto, solo member */}
+        <Route
+          path="/member"
+          element={
+            <ProtectedRoute allowedRoles={['member']}>
+              <Layout view="member" />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<MemberDashboard />} />
+          <Route path="calendar" element={<Calendar role="member" />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
+        </Route>
+
+        {/* Root redirect basato su ruolo */}
+        <Route
+          path="/"
+          element={
+            currentUser
+              ? <Navigate to={userRole === 'admin' ? '/admin' : '/member'} replace />
+              : <Navigate to="/login" replace />
+          }
+        />
+
+        {/* Catch-all */}
+        <Route
+          path="*"
+          element={
+            currentUser
+              ? <Navigate to={userRole === 'admin' ? '/admin' : '/member'} replace />
+              : <Navigate to="/login" replace />
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
-

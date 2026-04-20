@@ -63,6 +63,12 @@ export default function Sidebar({ view, isOpen, onClose }) {
             <Link to="/member/leaderboard" className={`nav-link ${isActive('/member/leaderboard')}`}>
               <span className="nav-icon">🏆</span> Classifica
             </Link>
+            <Link to="/member/my-pr" className={`nav-link ${isActive('/member/my-pr')}`}>
+              <span className="nav-icon">🏅</span> I Miei PR
+            </Link>
+            <Link to="/member/profile" className={`nav-link ${isActive('/member/profile')}`}>
+              <span className="nav-icon">👤</span> Il Mio Profilo
+            </Link>
           </div>
         )}
       </nav>

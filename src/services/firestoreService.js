@@ -12,7 +12,8 @@ import {
   limit,
   serverTimestamp,
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../config/firebase';
 
 // ─── USERS / MEMBERS ────────────────────────────────────────────────────────
 
@@ -20,6 +21,24 @@ export async function getUserData(uid) {
   const snap = await getDoc(doc(db, 'users', uid));
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
+
+export async function uploadUserDocument(uid, file, type) {
+  // type can be 'medical_certificate' or 'id_document'
+  const fileExt = file.name.split('.').pop();
+  const filePath = `users/${uid}/${type}.${fileExt}`;
+  const storageRef = ref(storage, filePath);
+  
+  await uploadBytes(storageRef, file);
+  const downloadUrl = await getDownloadURL(storageRef);
+  
+  // Save URL back to user profile
+  await updateDoc(doc(db, 'users', uid), {
+    [type]: downloadUrl
+  });
+  
+  return downloadUrl;
+}
+
 
 export async function getAllMembers() {
   // Single-field where — no composite index needed
@@ -83,6 +102,16 @@ export async function getUserBookings(userId) {
   const snap = await getDocs(q);
   const bookings = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   return bookings.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+}
+
+export async function getBookingsForClass(classId) {
+  const q = query(
+    collection(db, 'bookings'),
+    where('classId', '==', classId),
+    where('status', '==', 'confirmed')
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 export async function getUpcomingBooking(userId) {

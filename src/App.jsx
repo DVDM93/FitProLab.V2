@@ -13,6 +13,8 @@ import MemberDetail from './pages/Admin/MemberDetail';
 import Communications from './pages/Admin/Communications';
 import Subscriptions from './pages/Admin/Subscriptions';
 import Leaderboard from './pages/Member/Leaderboard';
+import MyPR from './pages/Member/MyPR';
+import Profile from './pages/Member/Profile';
 
 function App() {
   const { currentUser, userRole } = useAuth();
@@ -52,6 +54,8 @@ function App() {
           <Route index element={<MemberDashboard />} />
           <Route path="calendar" element={<Calendar role="member" />} />
           <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="my-pr" element={<MyPR />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         {/* Root redirect basato su ruolo */}

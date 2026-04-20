@@ -31,6 +31,7 @@ export function AuthProvider({ children }) {
       plan: 'Basic',
       joinDate: new Date().toISOString(),
       status: 'Attivo',
+      privacyConsent: true,
     };
 
     await setDoc(doc(db, 'users', user.uid), newUserData);

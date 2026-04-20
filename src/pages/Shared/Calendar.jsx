@@ -7,6 +7,7 @@ import {
   getUpcomingBooking,
   addClass,
   deleteClass,
+  getBookingsForClass,
 } from '../../services/firestoreService';
 import './Calendar.css';
 
@@ -29,6 +30,8 @@ export default function Calendar({ role }) {
   const [userBooking, setUserBooking] = useState(null); // current user's booking for today
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState(null); // { type: 'success'|'error', msg }
+  const [classBookings, setClassBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
 
   // Admin: new class form
   const [showAddForm, setShowAddForm] = useState(false);
@@ -59,6 +62,18 @@ export default function Calendar({ role }) {
       getUpcomingBooking(currentUser.uid).then(setUserBooking).catch(console.error);
     }
   }, [loadClasses, role, currentUser]);
+
+  useEffect(() => {
+    if (role === 'admin' && selectedClass) {
+      setLoadingBookings(true);
+      getBookingsForClass(selectedClass.id)
+        .then(data => setClassBookings(data))
+        .catch(err => console.error('Error fetching bookings:', err))
+        .finally(() => setLoadingBookings(false));
+    } else {
+      setClassBookings([]);
+    }
+  }, [selectedClass, role]);
 
   function showFeedback(type, msg) {
     setFeedback({ type, msg });
@@ -318,6 +333,23 @@ export default function Calendar({ role }) {
                 </div>
               ) : (
                 <div className="admin-actions">
+                  <div className="class-bookings-list" style={{ marginTop: '16px', marginBottom: '24px', textAlign: 'left', background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px' }}>
+                    <h4 style={{ color: 'var(--color-orange)', marginBottom: '12px', fontSize: '13px', textTransform: 'uppercase' }}>Persone Prenotate</h4>
+                    {loadingBookings ? (
+                      <p className="text-muted" style={{ fontSize: '13px' }}>Caricamento in corso...</p>
+                    ) : classBookings.length === 0 ? (
+                      <p className="text-muted" style={{ fontSize: '13px' }}>Nessuna prenotazione attiva.</p>
+                    ) : (
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {classBookings.map((b, i) => (
+                          <li key={b.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--color-text)' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', fontSize: '11px', color: 'var(--color-text-muted)' }}>{i + 1}</span>
+                            {b.userName || 'Utente senza nome'}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                   <button
                     className="danger-btn"
                     onClick={() => handleAdminDelete(selectedClass)}

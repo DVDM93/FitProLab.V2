@@ -162,7 +162,7 @@ export default function MemberDashboard() {
       {/* PR Recenti */}
       <div className="card mt-4">
         <div className="card-header-row">
-          <h3 className="card-title">I Miei PR Recenti</h3>
+          <h3 className="card-title">I Miei Massimali</h3>
           <Link to="/member/leaderboard" className="see-all-link">Vedi classifica →</Link>
         </div>
         {loading ? (

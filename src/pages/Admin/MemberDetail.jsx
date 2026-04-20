@@ -199,6 +199,36 @@ export default function MemberDetail() {
           )}
         </div>
 
+        <div className="card document-card mt-4">
+          <h3 className="card-title">Documenti & Consensi</h3>
+          <div className="sub-details">
+            <div className="sub-row">
+              <span className="text-muted">Consenso Privacy</span>
+              <strong>{member.privacyConsent !== false ? 'Accettato' : 'Mancante'}</strong>
+            </div>
+            <div className="sub-row">
+              <span className="text-muted">Certificato Medico</span>
+              {member.medical_certificate ? (
+                <a href={member.medical_certificate} target="_blank" rel="noreferrer" style={{color: 'var(--color-orange)'}}>
+                  Visualizza Documento
+                </a>
+              ) : (
+                <span className="text-muted">Mancante</span>
+              )}
+            </div>
+            <div className="sub-row">
+              <span className="text-muted">Doc. Identità</span>
+              {member.id_document ? (
+                <a href={member.id_document} target="_blank" rel="noreferrer" style={{color: 'var(--color-orange)'}}>
+                  Visualizza Documento
+                </a>
+              ) : (
+                <span className="text-muted">Mancante</span>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="card history-card">
           <h3 className="card-title">Ultime Prenotazioni</h3>
           {bookings.length === 0 ? (

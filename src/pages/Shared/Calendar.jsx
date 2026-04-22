@@ -35,7 +35,7 @@ export default function Calendar({ role }) {
 
   // Admin: new class form
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newClass, setNewClass] = useState({ title: 'CrossFit WOD', coach: '', time: '07:00', capacity: 20 });
+  const [newClass, setNewClass] = useState({ title: 'CrossFit WOD', coach: '', time: '07:00', capacity: 12 });
 
   const dateStr = toDateStr(currentDate);
 
@@ -90,6 +90,7 @@ export default function Calendar({ role }) {
       setUserBooking({ classId: cls.id, classTitle: cls.title, date: dateStr, status: 'confirmed' });
       setSelectedClass(null);
     } catch (err) {
+      console.error(err);
       showFeedback('error', 'Errore durante la prenotazione. Riprova.');
     } finally {
       setActionLoading(false);
@@ -106,6 +107,7 @@ export default function Calendar({ role }) {
       await loadClasses();
       setSelectedClass(null);
     } catch (err) {
+      console.error(err);
       showFeedback('error', 'Errore nella cancellazione.');
     } finally {
       setActionLoading(false);
@@ -120,6 +122,7 @@ export default function Calendar({ role }) {
       await loadClasses();
       setSelectedClass(null);
     } catch (err) {
+      console.error(err);
       showFeedback('error', 'Errore nella eliminazione.');
     }
   }
@@ -130,9 +133,10 @@ export default function Calendar({ role }) {
       await addClass({ ...newClass, date: dateStr, booked: 0, capacity: Number(newClass.capacity) });
       showFeedback('success', 'Classe aggiunta con successo.');
       setShowAddForm(false);
-      setNewClass({ title: 'CrossFit WOD', coach: '', time: '07:00', capacity: 20 });
+      setNewClass({ title: 'CrossFit WOD', coach: '', time: '07:00', capacity: 12 });
       await loadClasses();
     } catch (err) {
+      console.error(err);
       showFeedback('error', 'Errore nell\'aggiunta della classe.');
     }
   }
@@ -142,6 +146,34 @@ export default function Calendar({ role }) {
     next.setDate(next.getDate() + delta);
     setCurrentDate(next);
     setSelectedClass(null);
+  }
+
+  async function handleGenerateStandardWODs() {
+    if (!window.confirm(`Generare le classi "CrossFit WOD" (12 pax) per le ore: 10:00, 14:30, 16:30, 18:45, 20:00?`)) return;
+
+    setActionLoading(true);
+    const standardTimes = ['10:00', '14:30', '16:30', '18:45', '20:00'];
+
+    try {
+      const promises = standardTimes.map(time => {
+        return addClass({
+          title: 'CrossFit WOD',
+          coach: 'Team',
+          time: time,
+          capacity: 12,
+          date: dateStr,
+          booked: 0
+        });
+      });
+      await Promise.all(promises);
+      showFeedback('success', 'Giornata WOD generata con successo.');
+      await loadClasses();
+    } catch (err) {
+      console.error(err);
+      showFeedback('error', 'Errore nella generazione delle classi.');
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   const isUserBooked = (cls) =>
@@ -171,10 +203,19 @@ export default function Calendar({ role }) {
       </div>
 
       {role === 'admin' && (
-        <div className="admin-toolbar">
+        <div className="admin-toolbar" style={{ display: 'flex', gap: '12px' }}>
           <button className="primary-btn" onClick={() => setShowAddForm(!showAddForm)}>
             {showAddForm ? '✕ Annulla' : '+ Aggiungi Classe'}
           </button>
+          {!showAddForm && (
+            <button
+              className="secondary-btn"
+              onClick={handleGenerateStandardWODs}
+              disabled={actionLoading}
+            >
+              {actionLoading ? 'Attendere...' : '⚡ Classi Standard'}
+            </button>
+          )}
         </div>
       )}
 
@@ -326,8 +367,8 @@ export default function Calendar({ role }) {
                       {actionLoading
                         ? 'Attendere...'
                         : selectedClass.booked >= selectedClass.capacity
-                        ? 'Lista d\'Attesa'
-                        : 'Prenota Ora'}
+                          ? 'Lista d\'Attesa'
+                          : 'Prenota Ora'}
                     </button>
                   )}
                 </div>

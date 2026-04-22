@@ -10,7 +10,7 @@ export default function Login() {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, signup, userRole } = useAuth();
+  const { login, signup } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {

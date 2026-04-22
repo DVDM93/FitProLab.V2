@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getTodayNewBookingsCount } from '../../services/firestoreService';
+import { getTodayNewBookingsCount, getAllMembers } from '../../services/firestoreService';
 import './Topbar.css';
 
 export default function Topbar({ view, onMenuToggle }) {
@@ -10,6 +10,12 @@ export default function Topbar({ view, onMenuToggle }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
   const dropdownRef = useRef(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [allMembersCache, setAllMembersCache] = useState(null);
+  const searchRef = useRef(null);
 
   const displayName = userData?.name || currentUser?.email || (view === 'admin' ? 'Admin' : 'Membro');
   const firstLetter = displayName.charAt(0).toUpperCase();
@@ -29,6 +35,9 @@ export default function Topbar({ view, onMenuToggle }) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setProfileOpen(false);
       }
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchQuery('');
+      }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -43,6 +52,41 @@ export default function Topbar({ view, onMenuToggle }) {
     }
   }
 
+  const handleSearchChange = async (e) => {
+    const q = e.target.value;
+    setSearchQuery(q);
+
+    if (q.trim().length > 1) {
+      if (userRole === 'admin') {
+        if (!allMembersCache) {
+          setIsSearching(true);
+          try {
+            const members = await getAllMembers();
+            setAllMembersCache(members);
+            filterResults(q, members);
+          } catch (error) {
+            console.error('Error fetching members for search:', error);
+          } finally {
+            setIsSearching(false);
+          }
+        } else {
+          filterResults(q, allMembersCache);
+        }
+      }
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  const filterResults = (query, membersData) => {
+    const qLower = query.toLowerCase();
+    const filtered = membersData.filter(m => 
+      (m.name || '').toLowerCase().includes(qLower) || 
+      (m.email || '').toLowerCase().includes(qLower)
+    ).slice(0, 5);
+    setSearchResults(filtered);
+  };
+
   return (
     <header className="topbar">
       <div className="topbar-left">
@@ -55,9 +99,40 @@ export default function Topbar({ view, onMenuToggle }) {
           <span /><span /><span />
         </button>
 
-        <div className="topbar-search">
+        <div className="topbar-search" ref={searchRef}>
           <span className="search-icon">🔍</span>
-          <input type="text" placeholder="Cerca membri, corsi..." />
+          <input 
+            type="text" 
+            placeholder={userRole === 'admin' ? "Cerca membri, email..." : "Cerca..."}
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
+          {searchQuery.length > 1 && (
+            <div className="search-dropdown-results">
+              {isSearching ? (
+                <div className="search-loading">Ricerca in corso...</div>
+              ) : searchResults.length > 0 ? (
+                searchResults.map(member => (
+                  <div 
+                    key={member.id} 
+                    className="search-result-item"
+                    onClick={() => {
+                        navigate(`/admin/members/${member.id}`);
+                        setSearchQuery('');
+                    }}
+                  >
+                    <div className="avatar-sm">{member.name ? member.name.charAt(0).toUpperCase() : '?'}</div>
+                    <div className="search-result-info">
+                      <span className="search-result-name">{member.name || 'Senza nome'}</span>
+                      <span className="search-result-sub">{member.email}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="search-empty">Nessun risultato trovato</div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

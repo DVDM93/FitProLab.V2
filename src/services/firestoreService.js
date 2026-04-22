@@ -8,7 +8,6 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   limit,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -145,7 +144,7 @@ export async function bookClass(userId, classData, userName = '') {
   return booking;
 }
 
-export async function cancelBooking(bookingId, classId, currentBooked) {
+export async function cancelBooking(bookingId, classId) {
   await updateDoc(doc(db, 'bookings', bookingId), { status: 'cancelled' });
   if (classId) {
     // Fetch current class to get accurate booked count
@@ -262,5 +261,32 @@ export async function addWOD(wodData) {
     ...wodData,
     createdAt: serverTimestamp(),
   });
+}
+
+// ─── PAYMENTS ───────────────────────────────────────────────────────────────
+
+export async function getUserPayments(userId) {
+  const q = query(collection(db, 'payments'), where('userId', '==', userId));
+  const snap = await getDocs(q);
+  const payments = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return payments.sort((a, b) => {
+    const tA = a.date ? new Date(a.date).getTime() : 0;
+    const tB = b.date ? new Date(b.date).getTime() : 0;
+    return tB - tA; // descending
+  });
+}
+
+export async function addPayment(userId, paymentData, newExpirationDate) {
+  await addDoc(collection(db, 'payments'), {
+    userId,
+    ...paymentData,
+    createdAt: serverTimestamp(),
+  });
+
+  if (newExpirationDate) {
+    await updateDoc(doc(db, 'users', userId), {
+      expirationDate: newExpirationDate,
+    });
+  }
 }
 

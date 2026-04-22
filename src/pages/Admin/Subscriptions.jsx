@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getAllMembers, updateMember } from '../../services/firestoreService';
+import { getAllMembers } from '../../services/firestoreService';
 import './Subscriptions.css';
 
 // ─── Piano definitions ───────────────────────────────────────────────────────
 // priceMonthly is used for revenue estimates (12-pack and daily are approximated)
-const PLANS_DEF = [
+// eslint-disable-next-line react-refresh/only-export-components
+export const PLANS_DEF = [
   {
     key: 'Basic',
     label: 'Basic',

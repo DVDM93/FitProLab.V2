@@ -61,6 +61,7 @@ export default function Leaderboard() {
       setPrForm({ ...prForm, value: '' });
       await loadBoard();
     } catch (err) {
+      console.error(err);
       showToast('error', 'Errore nel salvataggio del PR.');
     } finally {
       setSaving(false);

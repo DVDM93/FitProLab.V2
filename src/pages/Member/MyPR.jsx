@@ -89,6 +89,7 @@ export default function MyPR() {
       setShowForm(false);
       await loadScores();
     } catch (err) {
+      console.error(err);
       showToast('error', 'Errore nel salvataggio. Riprova.');
     } finally {
       setSaving(false);

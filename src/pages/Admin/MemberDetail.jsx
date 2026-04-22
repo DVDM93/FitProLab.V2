@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getUserData, getUserBookings, getUserScores, updateMember } from '../../services/firestoreService';
+import { getUserData, getUserBookings, getUserScores, updateMember, getUserPayments, addPayment } from '../../services/firestoreService';
+import { PLANS_DEF } from './Subscriptions';
 import './MemberDetail.css';
 
 export default function MemberDetail() {
@@ -8,6 +9,12 @@ export default function MemberDetail() {
   const [member, setMember] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [scores, setScores] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentForm, setPaymentForm] = useState({
+    planKey: '', amount: '', method: 'Contanti', date: new Date().toISOString().split('T')[0], notes: '', newExpirationDate: ''
+  });
+  const [savingPayment, setSavingPayment] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
@@ -16,10 +23,11 @@ export default function MemberDetail() {
   useEffect(() => {
     async function loadMember() {
       try {
-        const [memberData, memberBookings, memberScores] = await Promise.all([
+        const [memberData, memberBookings, memberScores, memberPayments] = await Promise.all([
           getUserData(id),
           getUserBookings(id),
           getUserScores(id),
+          getUserPayments(id),
         ]);
         setMember(memberData);
         setEditForm({
@@ -27,9 +35,11 @@ export default function MemberDetail() {
           plan: memberData?.plan || 'Basic',
           status: memberData?.status || 'Attivo',
           phone: memberData?.phone || '',
+          expirationDate: memberData?.expirationDate || '',
         });
         setBookings(memberBookings.slice(0, 5)); // last 5
         setScores(memberScores.slice(0, 3)); // last 3 PR
+        setPayments(memberPayments);
       } catch (error) {
         console.error('Errore caricamento membro:', error);
       } finally {
@@ -57,6 +67,79 @@ export default function MemberDetail() {
     await updateMember(id, { status: 'Inattivo' });
     setMember((prev) => ({ ...prev, status: 'Inattivo' }));
   }
+
+  function handlePlanSelection(e) {
+    const key = e.target.value;
+    if (!key) {
+      setPaymentForm(prev => ({ ...prev, planKey: key }));
+      return;
+    }
+    const selectedPlan = PLANS_DEF.find(p => p.key === key);
+    if (selectedPlan) {
+      let suggestDate = new Date();
+      if (member?.expirationDate && new Date(member.expirationDate) > new Date()) {
+        suggestDate = new Date(member.expirationDate);
+      }
+      
+      if (selectedPlan.period.includes('mese')) {
+        suggestDate.setMonth(suggestDate.getMonth() + 1);
+      } else if (selectedPlan.period.includes('3 mesi')) {
+        suggestDate.setMonth(suggestDate.getMonth() + 3);
+      } else if (selectedPlan.period.includes('anno')) {
+        suggestDate.setFullYear(suggestDate.getFullYear() + 1);
+      }
+      
+      setPaymentForm(prev => ({
+        ...prev,
+        planKey: key,
+        amount: selectedPlan.priceMonthly,
+        notes: `Rinnovo ${selectedPlan.label}`,
+        newExpirationDate: suggestDate.toISOString().split('T')[0]
+      }));
+    }
+  }
+
+  async function handleSavePayment(e) {
+    e.preventDefault();
+    if (!paymentForm.amount || !paymentForm.date) return;
+    setSavingPayment(true);
+    try {
+      await addPayment(id, {
+        amount: parseFloat(paymentForm.amount),
+        method: paymentForm.method,
+        date: paymentForm.date,
+        notes: paymentForm.notes,
+      }, paymentForm.newExpirationDate);
+      
+      setMember(prev => ({ ...prev, expirationDate: paymentForm.newExpirationDate || prev.expirationDate }));
+      const newPayments = await getUserPayments(id);
+      setPayments(newPayments);
+      setShowPaymentModal(false);
+      setPaymentForm({
+        planKey: '', amount: '', method: 'Contanti', date: new Date().toISOString().split('T')[0], notes: '', newExpirationDate: ''
+      });
+    } catch (error) {
+      console.error('Errore registrazione pagamento:', error);
+    } finally {
+      setSavingPayment(false);
+    }
+  }
+
+  function openPaymentModal() {
+    let suggestDate = new Date();
+    if (member?.expirationDate) {
+      suggestDate = new Date(member.expirationDate);
+    }
+    suggestDate.setMonth(suggestDate.getMonth() + 1);
+    
+    setPaymentForm(prev => ({
+      ...prev,
+      planKey: '',
+      newExpirationDate: suggestDate.toISOString().split('T')[0]
+    }));
+    setShowPaymentModal(true);
+  }
+
 
   if (loading) {
     return (
@@ -189,10 +272,28 @@ export default function MemberDetail() {
                 <strong>{new Date(member.lastCheckIn).toLocaleDateString('it-IT')}</strong>
               </div>
             )}
+            <div className="sub-row mt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+              <span className="text-muted">Scadenza Abbonamento</span>
+              {editing ? (
+                <input
+                  type="date"
+                  className="edit-input small"
+                  value={editForm.expirationDate || ''}
+                  onChange={(e) => setEditForm({ ...editForm, expirationDate: e.target.value })}
+                />
+              ) : (
+                <strong className={member.expirationDate && new Date(member.expirationDate) < new Date() ? 'text-danger' : 'text-ok'}>
+                  {member.expirationDate ? new Date(member.expirationDate).toLocaleDateString('it-IT') : 'Non impostata'}
+                </strong>
+              )}
+            </div>
           </div>
           {!editing && (
             <div className="sub-actions">
-              <button className="danger-btn full-width mt-4" onClick={handleDeactivate}>
+              <button className="primary-btn full-width mt-4" onClick={openPaymentModal}>
+                💶 Registra Pagamento
+              </button>
+              <button className="danger-btn full-width mt-2" onClick={handleDeactivate}>
                 Disattiva Abbonamento
               </button>
             </div>
@@ -261,7 +362,88 @@ export default function MemberDetail() {
             </>
           )}
         </div>
+
+        <div className="card payments-card mt-4">
+          <h3 className="card-title">Storico Pagamenti</h3>
+          {payments.length === 0 ? (
+            <p className="text-muted">Nessun pagamento registrato.</p>
+          ) : (
+            <div className="table-responsive">
+              <table className="payments-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Importo</th>
+                    <th>Metodo</th>
+                    <th>Note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.map(p => (
+                    <tr key={p.id}>
+                      <td>{new Date(p.date).toLocaleDateString('it-IT')}</td>
+                      <td className="text-ok">€{p.amount.toFixed(2)}</td>
+                      <td>{p.method}</td>
+                      <td className="text-muted" style={{ fontSize: '13px' }}>{p.notes || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowPaymentModal(false)}>
+          <div className="modal-content payment-modal">
+            <button className="close-btn" onClick={() => setShowPaymentModal(false)}>✕</button>
+            <h2 className="modal-title">Registra Pagamento</h2>
+            <form onSubmit={handleSavePayment}>
+              <div className="form-group">
+                <label>Seleziona Piano (Opzionale)</label>
+                <select className="edit-select" style={{width: '100%', marginBottom: '12px'}} value={paymentForm.planKey} onChange={handlePlanSelection}>
+                  <option value="">-- Nessun piano / Importo libero --</option>
+                  {PLANS_DEF.map(p => (
+                    <option key={p.key} value={p.key}>{p.label} ({p.price}{p.period})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-row" style={{ display: 'flex', gap: '16px' }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Importo (€)</label>
+                  <input type="number" step="0.01" required value={paymentForm.amount} onChange={e => setPaymentForm({...paymentForm, amount: e.target.value})} />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Metodo di Pagamento</label>
+                  <select value={paymentForm.method} onChange={e => setPaymentForm({...paymentForm, method: e.target.value})}>
+                    <option value="Contanti">Contanti</option>
+                    <option value="Carta">Carta/Bancomat</option>
+                    <option value="Bonifico">Bonifico</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-row" style={{ display: 'flex', gap: '16px' }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Data Pagamento</label>
+                  <input type="date" required value={paymentForm.date} onChange={e => setPaymentForm({...paymentForm, date: e.target.value})} />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Nuova Scadenza</label>
+                  <input type="date" required value={paymentForm.newExpirationDate} onChange={e => setPaymentForm({...paymentForm, newExpirationDate: e.target.value})} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Note (opzionale)</label>
+                <input type="text" placeholder="Es. Pagamento parziale, promo..." value={paymentForm.notes} onChange={e => setPaymentForm({...paymentForm, notes: e.target.value})} />
+              </div>
+              <button type="submit" className="primary-btn full-width mt-4" style={{ padding: '14px', fontSize: '16px' }} disabled={savingPayment}>
+                {savingPayment ? 'Salvataggio...' : 'Conferma Pagamento'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

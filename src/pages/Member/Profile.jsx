@@ -39,6 +39,7 @@ export default function Profile() {
       await refreshUserData(currentUser.uid);
       showToast('success', 'Profilo aggiornato con successo.');
     } catch (err) {
+      console.error(err);
       showToast('error', 'Errore durante l\'aggiornamento.');
     } finally {
       setSavingInfo(false);

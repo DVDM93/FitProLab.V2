@@ -45,6 +45,9 @@ export default function Sidebar({ view, isOpen, onClose }) {
             <Link to="/admin/subscriptions" className={`nav-link ${isActive('/admin/subscriptions')}`}>
               <span className="nav-icon">💳</span> Abbonamenti
             </Link>
+            <Link to="/admin/wods" className={`nav-link ${isActive('/admin/wods')}`}>
+              <span className="nav-icon">🏋️</span> Libreria WOD
+            </Link>
             <Link to="/admin/communications" className={`nav-link ${isActive('/admin/communications')}`}>
               <span className="nav-icon">📣</span> Comunicazioni
             </Link>

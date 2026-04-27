@@ -16,9 +16,26 @@ import { db, storage } from '../config/firebase';
 
 // ─── USERS / MEMBERS ────────────────────────────────────────────────────────
 
+function enforceExpirationStatus(member) {
+  if (!member.expirationDate || member.status === 'Inattivo') return member;
+  const expDate = new Date(member.expirationDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  expDate.setHours(0, 0, 0, 0);
+
+  if (expDate < today) {
+    // Aggiornamento asincrono nel database per mantenere la coerenza
+    updateDoc(doc(db, 'users', member.id), { status: 'Inattivo' }).catch(console.error);
+    return { ...member, status: 'Inattivo' };
+  }
+  return member;
+}
+
 export async function getUserData(uid) {
   const snap = await getDoc(doc(db, 'users', uid));
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  if (!snap.exists()) return null;
+  const data = { id: snap.id, ...snap.data() };
+  return enforceExpirationStatus(data);
 }
 
 export async function uploadUserDocument(uid, file, type) {
@@ -43,7 +60,7 @@ export async function getAllMembers() {
   // Single-field where — no composite index needed
   const q = query(collection(db, 'users'), where('role', '==', 'member'));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs.map((d) => enforceExpirationStatus({ id: d.id, ...d.data() }));
 }
 
 export async function updateMember(uid, data) {
@@ -248,12 +265,20 @@ export async function getTodayNewBookingsCount() {
 
 // ─── WOD (Workout of the Day) ───────────────────────────────────────────────
 
-export async function getTodayWOD() {
-  const today = new Date().toISOString().split('T')[0];
-  const q = query(collection(db, 'wods'), where('date', '==', today));
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
-  return { id: snap.docs[0].id, ...snap.docs[0].data() };
+export async function getAllWODs() {
+  const snap = await getDocs(collection(db, 'wods'));
+  const wods = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return wods.sort((a, b) => {
+    const tA = a.createdAt?.toDate?.() || new Date(0);
+    const tB = b.createdAt?.toDate?.() || new Date(0);
+    return tB - tA; // newer first
+  });
+}
+
+export async function getWOD(wodId) {
+  if (!wodId) return null;
+  const snap = await getDoc(doc(db, 'wods', wodId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
 export async function addWOD(wodData) {
@@ -261,6 +286,18 @@ export async function addWOD(wodData) {
     ...wodData,
     createdAt: serverTimestamp(),
   });
+}
+
+export async function deleteWOD(wodId) {
+  await deleteDoc(doc(db, 'wods', wodId));
+}
+
+export async function getClassesForWOD(wodId) {
+  const q = query(collection(db, 'classes'), where('wodId', '==', wodId));
+  const snap = await getDocs(q);
+  const classes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Sort descending by date
+  return classes.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 }
 
 // ─── PAYMENTS ───────────────────────────────────────────────────────────────

@@ -177,6 +177,18 @@
   background: rgba(130, 0, 255, 0.12);
   color: #a855f7;
 }
+.plan-badge.plan-weightlifting-basic {
+  background: rgba(0, 204, 102, 0.12);
+  color: #00cc66;
+}
+.plan-badge.plan-weightlifting-pro {
+  background: rgba(255, 140, 0, 0.12);
+  color: #ff8c00;
+}
+.plan-badge.plan-weightlifting-competitor {
+  background: rgba(255, 0, 0, 0.12);
+  color: #ff4d4d;
+}
 
 /* Skeleton loaders */
 .table-skeleton {

@@ -12,6 +12,7 @@ import Calendar from './pages/Shared/Calendar';
 import MemberDetail from './pages/Admin/MemberDetail';
 import Communications from './pages/Admin/Communications';
 import Subscriptions from './pages/Admin/Subscriptions';
+import Wods from './pages/Admin/Wods';
 import Leaderboard from './pages/Member/Leaderboard';
 import MyPR from './pages/Member/MyPR';
 import Profile from './pages/Member/Profile';
@@ -40,6 +41,7 @@ function App() {
           <Route path="calendar" element={<Calendar role="admin" />} />
           <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="communications" element={<Communications />} />
+          <Route path="wods" element={<Wods />} />
         </Route>
 
         {/* Member Layout — protetto, solo member */}

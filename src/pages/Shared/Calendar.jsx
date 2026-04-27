@@ -8,6 +8,7 @@ import {
   addClass,
   deleteClass,
   getBookingsForClass,
+  getAllWODs,
 } from '../../services/firestoreService';
 import './Calendar.css';
 
@@ -35,7 +36,8 @@ export default function Calendar({ role }) {
 
   // Admin: new class form
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newClass, setNewClass] = useState({ title: 'CrossFit WOD', coach: '', time: '07:00', capacity: 12 });
+  const [newClass, setNewClass] = useState({ title: 'CrossFit WOD', coach: '', time: '07:00', capacity: 12, wodId: '' });
+  const [availableWods, setAvailableWods] = useState([]);
 
   const dateStr = toDateStr(currentDate);
 
@@ -60,6 +62,9 @@ export default function Calendar({ role }) {
     // load user's upcoming booking to check if they have one today
     if (role === 'member' && currentUser) {
       getUpcomingBooking(currentUser.uid).then(setUserBooking).catch(console.error);
+    }
+    if (role === 'admin') {
+      getAllWODs().then(setAvailableWods).catch(console.error);
     }
   }, [loadClasses, role, currentUser]);
 
@@ -130,10 +135,31 @@ export default function Calendar({ role }) {
   async function handleAddClass(e) {
     e.preventDefault();
     try {
-      await addClass({ ...newClass, date: dateStr, booked: 0, capacity: Number(newClass.capacity) });
+      let wodDataToSave = {};
+      if (newClass.wodId) {
+        const selectedWod = availableWods.find(w => w.id === newClass.wodId);
+        if (selectedWod) {
+          wodDataToSave = {
+            wodId: selectedWod.id,
+            wodTitle: selectedWod.title,
+            wodScheme: selectedWod.scheme || '',
+            wodExercises: selectedWod.exercises || []
+          };
+        }
+      }
+
+      await addClass({ 
+        title: newClass.title,
+        coach: newClass.coach,
+        time: newClass.time,
+        capacity: Number(newClass.capacity),
+        date: dateStr, 
+        booked: 0,
+        ...wodDataToSave
+      });
       showFeedback('success', 'Classe aggiunta con successo.');
       setShowAddForm(false);
-      setNewClass({ title: 'CrossFit WOD', coach: '', time: '07:00', capacity: 12 });
+      setNewClass({ title: 'CrossFit WOD', coach: '', time: '07:00', capacity: 12, wodId: '' });
       await loadClasses();
     } catch (err) {
       console.error(err);
@@ -248,6 +274,18 @@ export default function Calendar({ role }) {
                   required
                 />
               </div>
+              <div className="form-field">
+                <label>Libreria WOD (Opzionale)</label>
+                <select
+                  value={newClass.wodId || ''}
+                  onChange={(e) => setNewClass({ ...newClass, wodId: e.target.value })}
+                >
+                  <option value="">-- Nessun WOD associato --</option>
+                  {availableWods.map(w => (
+                    <option key={w.id} value={w.id}>{w.title} ({w.scheme || 'Misto'})</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="form-row">
               <div className="form-field">
@@ -336,6 +374,24 @@ export default function Calendar({ role }) {
             <p className="modal-subtitle">
               {selectedClass.time} — Coach {selectedClass.coach || '—'}
             </p>
+
+            {selectedClass.wodId && (role === 'admin' || isUserBooked(selectedClass)) && (
+              <div className="wod-preview-box" style={{ background: 'rgba(255,94,0,0.1)', padding: '12px', borderRadius: '8px', margin: '16px 0', border: '1px solid rgba(255,94,0,0.2)' }}>
+                <h4 style={{ color: 'var(--color-orange)', marginBottom: '8px', fontSize: '14px' }}>WOD: {selectedClass.wodTitle}</h4>
+                {selectedClass.wodScheme && <span className="wod-scheme" style={{ fontSize: '11px', display: 'inline-block', marginBottom: '8px', background: 'rgba(255,94,0,0.15)', padding: '2px 6px', borderRadius: '4px', color: 'var(--color-orange)', fontWeight: 'bold' }}>{selectedClass.wodScheme}</span>}
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px' }}>
+                  {selectedClass.wodExercises?.map((ex, i) => (
+                    <li key={i} style={{ marginBottom: '4px' }}>• {ex}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {selectedClass.wodId && role === 'member' && !isUserBooked(selectedClass) && (
+              <div className="wod-preview-box" style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', margin: '16px 0', textAlign: 'center' }}>
+                <span style={{ fontSize: '20px' }}>🔒</span>
+                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>Prenota questa classe per scoprire il WOD assegnato!</p>
+              </div>
+            )}
 
             <div className="modal-body">
               <div className="capacity-status">

@@ -92,6 +92,50 @@ export const PLANS_DEF = [
       'Nessun abbonamento richiesto',
     ],
   },
+  {
+    key: 'Weightlifting Basic',
+    label: 'Weightlifting Basic',
+    price: '€50',
+    period: '/mese',
+    priceMonthly: 50,
+    color: 'basic',
+    icon: '🏋️',
+    features: [
+      '3 classi WL a settimana',
+      'Accesso App',
+      'Leaderboard & PR tracking',
+    ],
+  },
+  {
+    key: 'Weightlifting Pro',
+    label: 'Weightlifting Pro',
+    price: '€60',
+    period: '/mese',
+    priceMonthly: 60,
+    color: 'pro',
+    icon: '🏋️',
+    features: [
+      '5 classi WL a settimana',
+      'Accesso App completo',
+      'Leaderboard & PR tracking',
+      'Priorità prenotazione',
+    ],
+  },
+  {
+    key: 'Weightlifting Competitor',
+    label: 'Weightlifting Competitor',
+    price: '€60',
+    period: '/mese',
+    priceMonthly: 60,
+    color: 'competitor',
+    icon: '🏋️',
+    features: [
+      'Classi WL illimitate',
+      'Calendario competizioni',
+      'Coaching specializzato',
+      'PR tracking avanzato',
+    ],
+  },
 ];
 
 // ─── Edit Modal ──────────────────────────────────────────────────────────────

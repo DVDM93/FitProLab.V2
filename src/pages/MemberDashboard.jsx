@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getUpcomingBooking, cancelBooking, getUserScores, getTodayWOD } from '../services/firestoreService';
+import { getUpcomingBooking, cancelBooking, getUserScores, getWOD } from '../services/firestoreService';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import CheckInModal from '../components/CheckInModal';
 import './Dashboard.css';
 
@@ -30,14 +32,24 @@ export default function MemberDashboard() {
     if (!currentUser) return;
     async function load() {
       try {
-        const [booking, userScores, todayWod] = await Promise.all([
+        const [booking, userScores] = await Promise.all([
           getUpcomingBooking(currentUser.uid),
           getUserScores(currentUser.uid),
-          getTodayWOD(),
         ]);
         setNextBooking(booking);
         setScores(userScores.slice(0, 4));
-        setWod(todayWod);
+
+        if (booking && booking.classId) {
+          const classSnap = await getDoc(doc(db, 'classes', booking.classId));
+          if (classSnap.exists() && classSnap.data().wodId) {
+            const bookedWod = await getWOD(classSnap.data().wodId);
+            setWod(bookedWod);
+          } else {
+            setWod(null);
+          }
+        } else {
+          setWod(null);
+        }
       } catch (err) {
         console.error('Errore caricamento dashboard membro:', err);
       } finally {
@@ -67,9 +79,8 @@ export default function MemberDashboard() {
     'snatch': '🏋️', 'run_5k': '🏃', 'fran': '⏱️', 'default': '🎯',
   };
 
-  // Use WOD from Firestore or fallback to default
-  const activeWod = wod || DEFAULT_WOD;
-  const exercises = wod?.exercises || DEFAULT_WOD.exercises;
+  // Il WOD è visibile solo se c'è una prenotazione e c'è un WOD associato
+  const canSeeWod = nextBooking && wod;
 
   return (
     <div className="dashboard-container">
@@ -92,23 +103,33 @@ export default function MemberDashboard() {
         <div className="card wod-card">
           <div className="card-header-row">
             <h3 className="card-title">Allenamento del Giorno</h3>
-            {wod && <span className="wod-source-badge">🔥 Dal box</span>}
+            {canSeeWod && <span className="wod-source-badge">🔥 Dal box</span>}
           </div>
-          <div className="wod-content">
-            <h4>"{activeWod.name}"</h4>
-            <p className="wod-type">{activeWod.type || activeWod.scheme}</p>
-            <ul>
-              {(Array.isArray(exercises) ? exercises : [exercises]).map((ex, i) => (
-                <li key={i}>{ex}</li>
-              ))}
-            </ul>
-            {activeWod.scoreType && (
-              <p className="wod-score-type">Score: {activeWod.scoreType}</p>
-            )}
-          </div>
-          <Link to="/member/calendar">
-            <button className="secondary-btn full-width mt-4">Prenota una Classe</button>
-          </Link>
+          {canSeeWod ? (
+            <div className="wod-content">
+              <h4>"{wod.title || wod.name}"</h4>
+              <p className="wod-type">{wod.type || wod.scheme}</p>
+              <ul>
+                {(Array.isArray(wod.exercises) ? wod.exercises : (wod.description ? wod.description.split('\n') : [])).map((ex, i) => (
+                  <li key={i}>{ex}</li>
+                ))}
+              </ul>
+              {wod.scoreType && (
+                <p className="wod-score-type">Score: {wod.scoreType}</p>
+              )}
+            </div>
+          ) : (
+            <div className="wod-hidden-state" style={{ padding: '24px 0', textAlign: 'center' }}>
+              <span style={{ fontSize: '40px', display: 'block', marginBottom: '16px' }}>🔒</span>
+              <p className="text-muted" style={{ marginBottom: '8px' }}>Il WOD è segreto!</p>
+              <p style={{ fontSize: '14px', color: 'var(--color-text)' }}>Prenota una classe per scoprire l'allenamento che ti aspetta.</p>
+            </div>
+          )}
+          {!nextBooking && (
+            <Link to="/member/calendar">
+              <button className="secondary-btn full-width mt-4">Vai al Calendario</button>
+            </Link>
+          )}
         </div>
 
         {/* Prossima prenotazione */}

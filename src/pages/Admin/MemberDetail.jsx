@@ -257,6 +257,9 @@ export default function MemberDetail() {
                   <option value="Basic">Basic (€60/mese)</option>
                   <option value="Pro">Pro (€90/mese)</option>
                   <option value="Trimestrale Pro">Trimestrale Pro (€250/3 mesi)</option>
+                  <option value="Weightlifting Basic">Weightlifting Basic (€50/mese)</option>
+                  <option value="Weightlifting Pro">Weightlifting Pro (€60/mese)</option>
+                  <option value="Weightlifting Competitor">Weightlifting Competitor (€60/mese)</option>
                 </select>
               ) : (
                 <strong>{member.plan || 'Basic'}</strong>

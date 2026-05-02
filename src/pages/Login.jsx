@@ -42,48 +42,48 @@ export default function Login() {
       <div className="login-card">
         <div className="login-logo-container">
           <img src="/src/assets/logo.png" alt="Fit Pro Lab Logo" className="logo-image" />
-          <h1 className="login-logo">FIT <span className="text-orange">PRO</span> LAB</h1>
+          <h1 className="login-logo">FIT PRO<span className="text-orange"></span> LAB</h1>
         </div>
         <h2 className="login-title">{isLogin ? 'Accedi al tuo account' : 'Crea un nuovo account'}</h2>
-        
+
         {error && <div className="login-error">{error}</div>}
 
         <form onSubmit={handleSubmit} className="login-form">
           {!isLogin && (
             <div className="form-group">
               <label>Nome Completo</label>
-              <input 
-                type="text" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                required 
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
                 placeholder="Mario Rossi"
               />
             </div>
           )}
-          
+
           <div className="form-group">
             <label>Email</label>
-            <input 
-              type="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              required 
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
               placeholder="mario@email.com"
             />
           </div>
-          
+
           <div className="form-group">
             <label>Password</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              required 
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
               placeholder="Minimo 6 caratteri"
             />
           </div>
-          
+
           <button disabled={loading} type="submit" className="login-btn">
             {loading ? 'Attendere...' : (isLogin ? 'Accedi' : 'Registrati')}
           </button>

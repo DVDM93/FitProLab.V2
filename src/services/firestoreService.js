@@ -5,7 +5,9 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  setDoc,
   deleteDoc,
+  deleteField,
   query,
   where,
   limit,
@@ -38,21 +40,83 @@ export async function getUserData(uid) {
   return enforceExpirationStatus(data);
 }
 
+async function getBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+}
+
+async function compressImageToBase64(file, maxWidth = 1024) {
+  if (!file.type.startsWith('image/')) return getBase64(file);
+  
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+      };
+    };
+  });
+}
+
 export async function uploadUserDocument(uid, file, type) {
-  // type can be 'medical_certificate' or 'id_document'
-  const fileExt = file.name.split('.').pop();
-  const filePath = `users/${uid}/${type}.${fileExt}`;
-  const storageRef = ref(storage, filePath);
+  const base64Data = await compressImageToBase64(file);
   
-  await uploadBytes(storageRef, file);
-  const downloadUrl = await getDownloadURL(storageRef);
+  await setDoc(doc(db, 'user_documents', uid), {
+    [type]: base64Data
+  }, { merge: true });
   
-  // Save URL back to user profile
   await updateDoc(doc(db, 'users', uid), {
-    [type]: downloadUrl
+    [type]: 'stored_in_db'
   });
   
-  return downloadUrl;
+  return base64Data;
+}
+
+export async function getUserDocuments(uid) {
+  const snap = await getDoc(doc(db, 'user_documents', uid));
+  if (snap.exists()) {
+    return snap.data();
+  }
+  return {};
+}
+
+export async function deleteUserDocument(uid, type) {
+  try {
+    await updateDoc(doc(db, 'user_documents', uid), {
+      [type]: deleteField()
+    });
+  } catch (e) {
+    console.error('Document non trovato o errore in user_documents:', e);
+  }
+  
+  try {
+    await updateDoc(doc(db, 'users', uid), {
+      [type]: deleteField()
+    });
+  } catch (e) {
+    console.error('Errore in update users:', e);
+  }
 }
 
 
@@ -321,9 +385,18 @@ export async function addPayment(userId, paymentData, newExpirationDate) {
   });
 
   if (newExpirationDate) {
-    await updateDoc(doc(db, 'users', userId), {
-      expirationDate: newExpirationDate,
-    });
+    const updateData = { expirationDate: newExpirationDate };
+    
+    const expDate = new Date(newExpirationDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    expDate.setHours(0, 0, 0, 0);
+    
+    if (expDate >= today) {
+      updateData.status = 'Attivo';
+    }
+
+    await updateDoc(doc(db, 'users', userId), updateData);
   }
 }
 

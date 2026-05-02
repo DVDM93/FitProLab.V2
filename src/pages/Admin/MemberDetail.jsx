@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getUserData, getUserBookings, getUserScores, updateMember, getUserPayments, addPayment } from '../../services/firestoreService';
+import { getUserData, getUserBookings, getUserScores, updateMember, getUserPayments, addPayment, uploadUserDocument, getUserDocuments, deleteUserDocument } from '../../services/firestoreService';
 import { PLANS_DEF } from './Subscriptions';
 import './MemberDetail.css';
 
@@ -19,15 +19,21 @@ export default function MemberDetail() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(null);
+  const [bookingFilter, setBookingFilter] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('');
+  const [userDocs, setUserDocs] = useState({});
+  const [viewingDocBase64, setViewingDocBase64] = useState(null);
 
   useEffect(() => {
     async function loadMember() {
       try {
-        const [memberData, memberBookings, memberScores, memberPayments] = await Promise.all([
+        const [memberData, memberBookings, memberScores, memberPayments, userDocsData] = await Promise.all([
           getUserData(id),
           getUserBookings(id),
           getUserScores(id),
           getUserPayments(id),
+          getUserDocuments(id)
         ]);
         setMember(memberData);
         setEditForm({
@@ -37,9 +43,10 @@ export default function MemberDetail() {
           phone: memberData?.phone || '',
           expirationDate: memberData?.expirationDate || '',
         });
-        setBookings(memberBookings.slice(0, 5)); // last 5
+        setBookings(memberBookings); // fetch all
         setScores(memberScores.slice(0, 3)); // last 3 PR
         setPayments(memberPayments);
+        setUserDocs(userDocsData || {});
       } catch (error) {
         console.error('Errore caricamento membro:', error);
       } finally {
@@ -66,6 +73,56 @@ export default function MemberDetail() {
     if (!window.confirm('Sei sicuro di voler disattivare questo membro?')) return;
     await updateMember(id, { status: 'Inattivo' });
     setMember((prev) => ({ ...prev, status: 'Inattivo' }));
+  }
+
+  async function handleFileUpload(e, type) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setUploadingDoc(type);
+    try {
+      const base64 = await uploadUserDocument(id, file, type);
+      setMember(prev => ({ ...prev, [type]: 'stored_in_db' }));
+      setUserDocs(prev => ({ ...prev, [type]: base64 }));
+    } catch (error) {
+      console.error('Errore caricamento documento:', error);
+      alert('Errore durante il caricamento del documento.');
+    } finally {
+      setUploadingDoc(null);
+    }
+  }
+
+  function handleViewDoc(type) {
+    if (member[type] && member[type].startsWith('http')) {
+       window.open(member[type], '_blank');
+       return;
+    }
+    const docBase64 = userDocs[type];
+    if (docBase64) {
+      setViewingDocBase64(docBase64);
+    } else {
+      alert("Documento non trovato.");
+    }
+  }
+
+  async function handleDeleteDoc(type) {
+    if (!window.confirm('Sei sicuro di voler eliminare questo documento? L\'azione è irreversibile.')) return;
+    try {
+      await deleteUserDocument(id, type);
+      setMember(prev => {
+        const copy = { ...prev };
+        delete copy[type];
+        return copy;
+      });
+      setUserDocs(prev => {
+        const copy = { ...prev };
+        delete copy[type];
+        return copy;
+      });
+    } catch(err) {
+      console.error(err);
+      alert('Errore durante l\'eliminazione del documento');
+    }
   }
 
   function handlePlanSelection(e) {
@@ -111,7 +168,19 @@ export default function MemberDetail() {
         notes: paymentForm.notes,
       }, paymentForm.newExpirationDate);
       
-      setMember(prev => ({ ...prev, expirationDate: paymentForm.newExpirationDate || prev.expirationDate }));
+      setMember(prev => {
+        let newStatus = prev.status;
+        if (paymentForm.newExpirationDate) {
+          const expDate = new Date(paymentForm.newExpirationDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          expDate.setHours(0, 0, 0, 0);
+          if (expDate >= today) {
+            newStatus = 'Attivo';
+          }
+        }
+        return { ...prev, expirationDate: paymentForm.newExpirationDate || prev.expirationDate, status: newStatus };
+      });
       const newPayments = await getUserPayments(id);
       setPayments(newPayments);
       setShowPaymentModal(false);
@@ -165,6 +234,17 @@ export default function MemberDetail() {
   const joinDate = member.joinDate
     ? new Date(member.joinDate).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
     : 'N/A';
+
+  const filteredBookings = bookings.filter(b => 
+    (b.classTitle || '').toLowerCase().includes(bookingFilter.toLowerCase()) ||
+    (b.date || '').includes(bookingFilter)
+  );
+
+  const filteredPayments = payments.filter(p => 
+    (p.notes || '').toLowerCase().includes(paymentFilter.toLowerCase()) ||
+    (p.method || '').toLowerCase().includes(paymentFilter.toLowerCase()) ||
+    (p.date || '').includes(paymentFilter)
+  );
 
   return (
     <div className="member-detail-container">
@@ -282,7 +362,22 @@ export default function MemberDetail() {
                   type="date"
                   className="edit-input small"
                   value={editForm.expirationDate || ''}
-                  onChange={(e) => setEditForm({ ...editForm, expirationDate: e.target.value })}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    let newStatus = editForm.status;
+                    if (newDate) {
+                      const expDate = new Date(newDate);
+                      const today = new Date();
+                      today.setHours(0,0,0,0);
+                      expDate.setHours(0,0,0,0);
+                      if (expDate >= today) {
+                        newStatus = 'Attivo';
+                      } else {
+                        newStatus = 'Inattivo';
+                      }
+                    }
+                    setEditForm({ ...editForm, expirationDate: newDate, status: newStatus });
+                  }}
                 />
               ) : (
                 <strong className={member.expirationDate && new Date(member.expirationDate) < new Date() ? 'text-danger' : 'text-ok'}>
@@ -293,10 +388,10 @@ export default function MemberDetail() {
           </div>
           {!editing && (
             <div className="sub-actions">
-              <button className="primary-btn full-width mt-4" onClick={openPaymentModal}>
+              <button className="primary-btn full-width" onClick={openPaymentModal}>
                 💶 Registra Pagamento
               </button>
-              <button className="danger-btn full-width mt-2" onClick={handleDeactivate}>
+              <button className="danger-btn full-width" onClick={handleDeactivate}>
                 Disattiva Abbonamento
               </button>
             </div>
@@ -310,68 +405,124 @@ export default function MemberDetail() {
               <span className="text-muted">Consenso Privacy</span>
               <strong>{member.privacyConsent !== false ? 'Accettato' : 'Mancante'}</strong>
             </div>
-            <div className="sub-row">
+            <div className="sub-row" style={{ alignItems: 'center' }}>
               <span className="text-muted">Certificato Medico</span>
-              {member.medical_certificate ? (
-                <a href={member.medical_certificate} target="_blank" rel="noreferrer" style={{color: 'var(--color-orange)'}}>
-                  Visualizza Documento
-                </a>
-              ) : (
-                <span className="text-muted">Mancante</span>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {member.medical_certificate ? (
+                  <>
+                    <button className="secondary-btn" style={{ padding: '4px 8px', fontSize: '12px', cursor: 'pointer', margin: 0, border: 'none', color: 'var(--color-orange)' }} onClick={() => handleViewDoc('medical_certificate')}>
+                      Visualizza
+                    </button>
+                    <button className="danger-btn" style={{ padding: '2px 6px', fontSize: '11px', margin: 0, background: 'transparent', color: '#ff4646', border: '1px solid #ff4646' }} onClick={() => handleDeleteDoc('medical_certificate')}>
+                      Elimina
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-muted">Mancante</span>
+                )}
+                <input 
+                  type="file" 
+                  id="upload-medical" 
+                  style={{ display: 'none' }} 
+                  onChange={(e) => handleFileUpload(e, 'medical_certificate')}
+                  accept="image/*,.pdf"
+                />
+                <label htmlFor="upload-medical" className="secondary-btn" style={{ padding: '4px 8px', fontSize: '12px', cursor: 'pointer', margin: 0 }}>
+                  {uploadingDoc === 'medical_certificate' ? '...' : 'Carica'}
+                </label>
+              </div>
             </div>
-            <div className="sub-row">
+            <div className="sub-row" style={{ alignItems: 'center', borderBottom: 'none', paddingBottom: 0 }}>
               <span className="text-muted">Doc. Identità</span>
-              {member.id_document ? (
-                <a href={member.id_document} target="_blank" rel="noreferrer" style={{color: 'var(--color-orange)'}}>
-                  Visualizza Documento
-                </a>
-              ) : (
-                <span className="text-muted">Mancante</span>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {member.id_document ? (
+                  <>
+                    <button className="secondary-btn" style={{ padding: '4px 8px', fontSize: '12px', cursor: 'pointer', margin: 0, border: 'none', color: 'var(--color-orange)' }} onClick={() => handleViewDoc('id_document')}>
+                      Visualizza
+                    </button>
+                    <button className="danger-btn" style={{ padding: '2px 6px', fontSize: '11px', margin: 0, background: 'transparent', color: '#ff4646', border: '1px solid #ff4646' }} onClick={() => handleDeleteDoc('id_document')}>
+                      Elimina
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-muted">Mancante</span>
+                )}
+                <input 
+                  type="file" 
+                  id="upload-id" 
+                  style={{ display: 'none' }} 
+                  onChange={(e) => handleFileUpload(e, 'id_document')}
+                  accept="image/*,.pdf"
+                />
+                <label htmlFor="upload-id" className="secondary-btn" style={{ padding: '4px 8px', fontSize: '12px', cursor: 'pointer', margin: 0 }}>
+                  {uploadingDoc === 'id_document' ? '...' : 'Carica'}
+                </label>
+              </div>
             </div>
           </div>
         </div>
 
         <div className="card history-card">
-          <h3 className="card-title">Ultime Prenotazioni</h3>
-          {bookings.length === 0 ? (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 className="card-title" style={{ margin: 0 }}>Storico Prenotazioni</h3>
+            <input 
+              type="text" 
+              className="edit-input small" 
+              placeholder="Cerca classe o data..." 
+              style={{ width: '200px' }}
+              value={bookingFilter}
+              onChange={e => setBookingFilter(e.target.value)}
+            />
+          </div>
+          {filteredBookings.length === 0 ? (
             <p className="text-muted">Nessuna prenotazione trovata.</p>
           ) : (
-            <ul className="activity-list">
-              {bookings.map((b) => (
-                <li key={b.id}>
-                  <span className={`dot ${b.status === 'cancelled' ? 'gray' : 'orange'}`} />
-                  <p className={b.status === 'cancelled' ? 'text-muted' : ''}>
-                    {b.status === 'cancelled' ? 'Cancellato: ' : ''}{b.classTitle || 'Classe'}
-                  </p>
-                  <span className="time">{b.date}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {scores.length > 0 && (
-            <>
-              <h4 className="mt-4 mb-2">PR Recenti</h4>
-              <div className="stats-row">
-                {scores.map((s) => (
-                  <div className="mini-stat" key={s.id}>
-                    <span className="value">{s.value}{s.unit || ''}</span>
-                    <span className="label">{s.exerciseName}</span>
-                  </div>
+            <div className="scrollable-list">
+              <ul className="activity-list">
+                {filteredBookings.map((b) => (
+                  <li key={b.id}>
+                    <span className={`dot ${b.status === 'cancelled' ? 'gray' : 'orange'}`} />
+                    <p className={b.status === 'cancelled' ? 'text-muted' : ''}>
+                      {b.status === 'cancelled' ? 'Cancellato: ' : ''}{b.classTitle || 'Classe'}
+                    </p>
+                    <span className="time">{b.date}</span>
+                  </li>
                 ))}
-              </div>
-            </>
+              </ul>
+            </div>
           )}
         </div>
 
+        {scores.length > 0 && (
+          <div className="card pr-card mt-4">
+            <h3 className="card-title">PR Recenti</h3>
+            <div className="stats-row mt-4">
+              {scores.map((s) => (
+                <div className="mini-stat" key={s.id}>
+                  <span className="value">{s.value}{s.unit || ''}</span>
+                  <span className="label">{s.exerciseName}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="card payments-card mt-4">
-          <h3 className="card-title">Storico Pagamenti</h3>
-          {payments.length === 0 ? (
-            <p className="text-muted">Nessun pagamento registrato.</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 className="card-title" style={{ margin: 0 }}>Storico Pagamenti</h3>
+            <input 
+              type="text" 
+              className="edit-input small" 
+              placeholder="Cerca pagamento..." 
+              style={{ width: '200px' }}
+              value={paymentFilter}
+              onChange={e => setPaymentFilter(e.target.value)}
+            />
+          </div>
+          {filteredPayments.length === 0 ? (
+            <p className="text-muted">Nessun pagamento trovato.</p>
           ) : (
-            <div className="table-responsive">
+            <div className="table-responsive scrollable-list">
               <table className="payments-table">
                 <thead>
                   <tr>
@@ -382,7 +533,7 @@ export default function MemberDetail() {
                   </tr>
                 </thead>
                 <tbody>
-                  {payments.map(p => (
+                  {filteredPayments.map(p => (
                     <tr key={p.id}>
                       <td>{new Date(p.date).toLocaleDateString('it-IT')}</td>
                       <td className="text-ok">€{p.amount.toFixed(2)}</td>
@@ -444,6 +595,20 @@ export default function MemberDetail() {
                 {savingPayment ? 'Salvataggio...' : 'Conferma Pagamento'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Document Modal */}
+      {viewingDocBase64 && (
+        <div className="modal-overlay" onClick={() => setViewingDocBase64(null)}>
+          <div className="modal-content" style={{ maxWidth: '90%', maxHeight: '90vh', overflow: 'auto', textAlign: 'center', padding: '16px' }}>
+            <button className="close-btn" onClick={() => setViewingDocBase64(null)}>✕</button>
+            {viewingDocBase64.startsWith('data:application/pdf') ? (
+              <iframe src={viewingDocBase64} style={{ width: '100%', height: '80vh', border: 'none' }} title="Documento PDF" />
+            ) : (
+              <img src={viewingDocBase64} alt="Documento" style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }} />
+            )}
           </div>
         </div>
       )}

@@ -72,7 +72,27 @@
   gap: 24px;
 }
 
-.sub-details { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+.subscription-card,
+.document-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.sub-details { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 16px; 
+  margin-bottom: 24px; 
+  flex: 1; 
+}
+
+.sub-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: auto;
+}
+
 .sub-row { display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
 .stats-row { display: flex; gap: 16px; margin-bottom: 24px; }
@@ -190,4 +210,10 @@
 
 .payment-modal {
   max-width: 450px;
+}
+
+.scrollable-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 8px;
 }

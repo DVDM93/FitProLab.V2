@@ -16,6 +16,61 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
 
+export const DEFAULT_PLANS = [
+  {
+    key: 'Basic', label: 'Basic', price: '€50', period: '/mese', priceMonthly: 50, color: 'basic', icon: '🥉',
+    features: ['3 classi a settimana', 'Accesso App', 'Leaderboard & PR tracking'],
+  },
+  {
+    key: 'Pro', label: 'Pro', price: '€60', period: '/mese', priceMonthly: 60, color: 'pro', icon: '🥇',
+    features: ['5 classi a settimana', 'Accesso App completo', 'Leaderboard & PR tracking', 'Priorità prenotazione'],
+  },
+  {
+    key: 'Competitor', label: 'Competitor', price: '€60', period: '/mese', priceMonthly: 60, color: 'competitor', icon: '🏆',
+    features: ['Classi illimitate', 'Calendario competizioni', 'Coaching specializzato', 'PR tracking avanzato'],
+  },
+  {
+    key: 'Open Gym', label: 'Open Gym', price: '€50', period: '/mese', priceMonthly: 50, color: 'opengym', icon: '🏋️',
+    features: ['Accesso libero alla palestra', 'Nessuna prenotazione richiesta', 'Spogliatoi & docce'],
+  },
+  {
+    key: 'Pacchetto 12', label: 'Pacchetto 12 Lezioni', price: '€55', period: '/pacchetto', priceMonthly: 55, color: 'pack12', icon: '🎟️',
+    features: ['12 lezioni prepagata', 'Valido 6 mesi', 'Nessun rinnovo automatico'],
+  },
+  {
+    key: 'Giornaliero', label: 'Ingresso Giornaliero', price: '€8', period: '/giorno', priceMonthly: 8, color: 'daily', icon: '🎫',
+    features: ['Accesso singolo', 'Una classe a scelta', 'Nessun abbonamento richiesto'],
+  },
+  {
+    key: 'Weightlifting Basic', label: 'Weightlifting Basic', price: '€50', period: '/mese', priceMonthly: 50, color: 'basic', icon: '🏋️',
+    features: ['3 classi WL a settimana', 'Accesso App', 'Leaderboard & PR tracking'],
+  },
+  {
+    key: 'Weightlifting Pro', label: 'Weightlifting Pro', price: '€60', period: '/mese', priceMonthly: 60, color: 'pro', icon: '🏋️',
+    features: ['5 classi WL a settimana', 'Accesso App completo', 'Leaderboard & PR tracking', 'Priorità prenotazione'],
+  },
+  {
+    key: 'Weightlifting Competitor', label: 'Weightlifting Competitor', price: '€60', period: '/mese', priceMonthly: 60, color: 'competitor', icon: '🏋️',
+    features: ['Classi WL illimitate', 'Calendario competizioni', 'Coaching specializzato', 'PR tracking avanzato'],
+  },
+];
+
+export async function getSubscriptionPlans() {
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'plans'));
+    if (snap.exists() && snap.data().plans) {
+      return snap.data().plans;
+    }
+  } catch (err) {
+    console.error('Error fetching plans', err);
+  }
+  return DEFAULT_PLANS;
+}
+
+export async function saveSubscriptionPlans(plansArray) {
+  await setDoc(doc(db, 'settings', 'plans'), { plans: plansArray }, { merge: true });
+}
+
 // ─── USERS / MEMBERS ────────────────────────────────────────────────────────
 
 function enforceExpirationStatus(member) {

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getUserData, getUserBookings, getUserScores, updateMember, getUserPayments, addPayment, uploadUserDocument, getUserDocuments, deleteUserDocument } from '../../services/firestoreService';
-import { PLANS_DEF } from './Subscriptions';
+import { getUserData, getUserBookings, getUserScores, updateMember, getUserPayments, addPayment, uploadUserDocument, getUserDocuments, deleteUserDocument, getSubscriptionPlans } from '../../services/firestoreService';
 import './MemberDetail.css';
 
 export default function MemberDetail() {
@@ -24,16 +23,18 @@ export default function MemberDetail() {
   const [paymentFilter, setPaymentFilter] = useState('');
   const [userDocs, setUserDocs] = useState({});
   const [viewingDocBase64, setViewingDocBase64] = useState(null);
+  const [availablePlans, setAvailablePlans] = useState([]);
 
   useEffect(() => {
     async function loadMember() {
       try {
-        const [memberData, memberBookings, memberScores, memberPayments, userDocsData] = await Promise.all([
+        const [memberData, memberBookings, memberScores, memberPayments, userDocsData, plansData] = await Promise.all([
           getUserData(id),
           getUserBookings(id),
           getUserScores(id),
           getUserPayments(id),
-          getUserDocuments(id)
+          getUserDocuments(id),
+          getSubscriptionPlans()
         ]);
         setMember(memberData);
         setEditForm({
@@ -47,6 +48,7 @@ export default function MemberDetail() {
         setScores(memberScores.slice(0, 3)); // last 3 PR
         setPayments(memberPayments);
         setUserDocs(userDocsData || {});
+        setAvailablePlans(plansData || []);
       } catch (error) {
         console.error('Errore caricamento membro:', error);
       } finally {
@@ -131,7 +133,7 @@ export default function MemberDetail() {
       setPaymentForm(prev => ({ ...prev, planKey: key }));
       return;
     }
-    const selectedPlan = PLANS_DEF.find(p => p.key === key);
+    const selectedPlan = availablePlans.find(p => p.key === key);
     if (selectedPlan) {
       let suggestDate = new Date();
       if (member?.expirationDate && new Date(member.expirationDate) > new Date()) {
@@ -334,12 +336,9 @@ export default function MemberDetail() {
                   value={editForm.plan}
                   onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}
                 >
-                  <option value="Basic">Basic (€60/mese)</option>
-                  <option value="Pro">Pro (€90/mese)</option>
-                  <option value="Trimestrale Pro">Trimestrale Pro (€250/3 mesi)</option>
-                  <option value="Weightlifting Basic">Weightlifting Basic (€50/mese)</option>
-                  <option value="Weightlifting Pro">Weightlifting Pro (€60/mese)</option>
-                  <option value="Weightlifting Competitor">Weightlifting Competitor (€60/mese)</option>
+                  {availablePlans.map(p => (
+                    <option key={p.key} value={p.key}>{p.label} ({p.price}{p.period})</option>
+                  ))}
                 </select>
               ) : (
                 <strong>{member.plan || 'Basic'}</strong>
@@ -558,7 +557,7 @@ export default function MemberDetail() {
                 <label>Seleziona Piano (Opzionale)</label>
                 <select className="edit-select" style={{width: '100%', marginBottom: '12px'}} value={paymentForm.planKey} onChange={handlePlanSelection}>
                   <option value="">-- Nessun piano / Importo libero --</option>
-                  {PLANS_DEF.map(p => (
+                  {availablePlans.map(p => (
                     <option key={p.key} value={p.key}>{p.label} ({p.price}{p.period})</option>
                   ))}
                 </select>

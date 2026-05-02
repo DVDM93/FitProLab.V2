@@ -1,142 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getAllMembers } from '../../services/firestoreService';
+import { getAllMembers, getSubscriptionPlans, saveSubscriptionPlans } from '../../services/firestoreService';
 import './Subscriptions.css';
-
-// ─── Piano definitions ───────────────────────────────────────────────────────
-// priceMonthly is used for revenue estimates (12-pack and daily are approximated)
-// eslint-disable-next-line react-refresh/only-export-components
-export const PLANS_DEF = [
-  {
-    key: 'Basic',
-    label: 'Basic',
-    price: '€50',
-    period: '/mese',
-    priceMonthly: 50,
-    color: 'basic',
-    icon: '🥉',
-    features: [
-      '3 classi a settimana',
-      'Accesso App',
-      'Leaderboard & PR tracking',
-    ],
-  },
-  {
-    key: 'Pro',
-    label: 'Pro',
-    price: '€60',
-    period: '/mese',
-    priceMonthly: 60,
-    color: 'pro',
-    icon: '🥇',
-    features: [
-      '5 classi a settimana',
-      'Accesso App completo',
-      'Leaderboard & PR tracking',
-      'Priorità prenotazione',
-    ],
-  },
-  {
-    key: 'Competitor',
-    label: 'Competitor',
-    price: '€60',
-    period: '/mese',
-    priceMonthly: 60,
-    color: 'competitor',
-    icon: '🏆',
-    features: [
-      'Classi illimitate',
-      'Calendario competizioni',
-      'Coaching specializzato',
-      'PR tracking avanzato',
-    ],
-  },
-  {
-    key: 'Open Gym',
-    label: 'Open Gym',
-    price: '€50',
-    period: '/mese',
-    priceMonthly: 50,
-    color: 'opengym',
-    icon: '🏋️',
-    features: [
-      'Accesso libero alla palestra',
-      'Nessuna prenotazione richiesta',
-      'Spogliatoi & docce',
-    ],
-  },
-  {
-    key: 'Pacchetto 12',
-    label: 'Pacchetto 12 Lezioni',
-    price: '€55',
-    period: '/pacchetto',
-    priceMonthly: 55,   // per-pack; shown as revenue when active
-    color: 'pack12',
-    icon: '🎟️',
-    features: [
-      '12 lezioni prepagata',
-      'Valido 6 mesi',
-      'Nessun rinnovo automatico',
-    ],
-  },
-  {
-    key: 'Giornaliero',
-    label: 'Ingresso Giornaliero',
-    price: '€8',
-    period: '/giorno',
-    priceMonthly: 8,    // single entry
-    color: 'daily',
-    icon: '🎫',
-    features: [
-      'Accesso singolo',
-      'Una classe a scelta',
-      'Nessun abbonamento richiesto',
-    ],
-  },
-  {
-    key: 'Weightlifting Basic',
-    label: 'Weightlifting Basic',
-    price: '€50',
-    period: '/mese',
-    priceMonthly: 50,
-    color: 'basic',
-    icon: '🏋️',
-    features: [
-      '3 classi WL a settimana',
-      'Accesso App',
-      'Leaderboard & PR tracking',
-    ],
-  },
-  {
-    key: 'Weightlifting Pro',
-    label: 'Weightlifting Pro',
-    price: '€60',
-    period: '/mese',
-    priceMonthly: 60,
-    color: 'pro',
-    icon: '🏋️',
-    features: [
-      '5 classi WL a settimana',
-      'Accesso App completo',
-      'Leaderboard & PR tracking',
-      'Priorità prenotazione',
-    ],
-  },
-  {
-    key: 'Weightlifting Competitor',
-    label: 'Weightlifting Competitor',
-    price: '€60',
-    period: '/mese',
-    priceMonthly: 60,
-    color: 'competitor',
-    icon: '🏋️',
-    features: [
-      'Classi WL illimitate',
-      'Calendario competizioni',
-      'Coaching specializzato',
-      'PR tracking avanzato',
-    ],
-  },
-];
 
 // ─── Edit Modal ──────────────────────────────────────────────────────────────
 function EditPlanModal({ plan, onClose, onSave }) {
@@ -219,7 +83,7 @@ function EditPlanModal({ plan, onClose, onSave }) {
 
 // ─── Main component ──────────────────────────────────────────────────────────
 export default function Subscriptions() {
-  const [plans, setPlans]           = useState(PLANS_DEF);
+  const [plans, setPlans]           = useState([]);
   const [planCounts, setPlanCounts] = useState({});
   const [totalActive, setTotalActive] = useState(null);
   const [loading, setLoading]       = useState(true);
@@ -227,25 +91,30 @@ export default function Subscriptions() {
   const [toast, setToast]           = useState(null);
 
   useEffect(() => {
-    async function loadCounts() {
+    async function loadData() {
       try {
-        const allMembers = await getAllMembers();
+        const [allMembers, fetchedPlans] = await Promise.all([
+          getAllMembers(),
+          getSubscriptionPlans()
+        ]);
+        
+        setPlans(fetchedPlans);
+        
         const activeMembers = allMembers.filter((m) => m.status === 'Attivo');
         const counts = {};
-        plans.forEach((plan) => {
+        fetchedPlans.forEach((plan) => {
           counts[plan.key] = activeMembers.filter((m) => m.plan === plan.key).length;
         });
         const total = Object.values(counts).reduce((a, b) => a + b, 0);
         setPlanCounts(counts);
         setTotalActive(total);
       } catch (err) {
-        console.error('Errore caricamento piani:', err);
+        console.error('Errore caricamento dati:', err);
       } finally {
         setLoading(false);
       }
     }
-    loadCounts();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadData();
   }, []);
 
   // Compute most popular plan key (highest subscriber count)
@@ -271,10 +140,17 @@ export default function Subscriptions() {
     setTimeout(() => setToast(null), 3000);
   }
 
-  function handleSave(updated) {
-    setPlans((prev) => prev.map((p) => (p.key === updated.key ? updated : p)));
+  async function handleSave(updated) {
+    const newPlans = plans.map((p) => (p.key === updated.key ? updated : p));
+    setPlans(newPlans);
     setEditing(null);
-    showToast(`Piano "${updated.label}" aggiornato ✅`);
+    try {
+      await saveSubscriptionPlans(newPlans);
+      showToast(`Piano "${updated.label}" salvato con successo ✅`);
+    } catch (err) {
+      console.error(err);
+      showToast('Errore durante il salvataggio.');
+    }
   }
 
   // Colors for the distribution bar (extend for 6 plans)

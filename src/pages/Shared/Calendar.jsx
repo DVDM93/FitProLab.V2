@@ -36,8 +36,10 @@ export default function Calendar({ role }) {
 
   // Admin: new class form
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showStandardForm, setShowStandardForm] = useState(false);
   const [newClass, setNewClass] = useState({ title: 'CrossFit WOD', coach: '', time: '07:00', capacity: 12, wodId: '' });
   const [availableWods, setAvailableWods] = useState([]);
+  const [standardWodId, setStandardWodId] = useState('');
 
   const dateStr = toDateStr(currentDate);
 
@@ -175,10 +177,21 @@ export default function Calendar({ role }) {
   }
 
   async function handleGenerateStandardWODs() {
-    if (!window.confirm(`Generare le classi "CrossFit WOD" (12 pax) per le ore: 10:00, 14:30, 16:30, 18:45, 20:00?`)) return;
-
     setActionLoading(true);
     const standardTimes = ['10:00', '14:30', '16:30', '18:45', '20:00'];
+
+    let wodDataToSave = {};
+    if (standardWodId) {
+      const selectedWod = availableWods.find(w => w.id === standardWodId);
+      if (selectedWod) {
+        wodDataToSave = {
+          wodId: selectedWod.id,
+          wodTitle: selectedWod.title,
+          wodScheme: selectedWod.scheme || '',
+          wodExercises: selectedWod.exercises || []
+        };
+      }
+    }
 
     try {
       const promises = standardTimes.map(time => {
@@ -188,11 +201,14 @@ export default function Calendar({ role }) {
           time: time,
           capacity: 12,
           date: dateStr,
-          booked: 0
+          booked: 0,
+          ...wodDataToSave
         });
       });
       await Promise.all(promises);
       showFeedback('success', 'Giornata WOD generata con successo.');
+      setShowStandardForm(false);
+      setStandardWodId('');
       await loadClasses();
     } catch (err) {
       console.error(err);
@@ -204,6 +220,8 @@ export default function Calendar({ role }) {
 
   const isUserBooked = (cls) =>
     userBooking && userBooking.classId === cls.id && userBooking.status === 'confirmed';
+
+  const hasStandardClasses = classes.some(c => c.title === 'CrossFit WOD');
 
   return (
     <div className="calendar-container">
@@ -230,18 +248,54 @@ export default function Calendar({ role }) {
 
       {role === 'admin' && (
         <div className="admin-toolbar" style={{ display: 'flex', gap: '12px' }}>
-          <button className="primary-btn" onClick={() => setShowAddForm(!showAddForm)}>
+          <button className="primary-btn" onClick={() => { setShowAddForm(!showAddForm); setShowStandardForm(false); }}>
             {showAddForm ? '✕ Annulla' : '+ Aggiungi Classe'}
           </button>
           {!showAddForm && (
             <button
-              className="secondary-btn"
-              onClick={handleGenerateStandardWODs}
-              disabled={actionLoading}
+              className={`secondary-btn ${hasStandardClasses ? 'disabled' : ''}`}
+              onClick={() => {
+                if (hasStandardClasses) {
+                  showFeedback('error', 'Le classi standard sono già state generate per questa data.');
+                  return;
+                }
+                setShowStandardForm(!showStandardForm);
+              }}
+              disabled={actionLoading || hasStandardClasses}
+              style={hasStandardClasses ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
             >
-              {actionLoading ? 'Attendere...' : '⚡ Classi Standard'}
+              {showStandardForm ? '✕ Annulla' : '⚡ Classi Standard'}
             </button>
           )}
+        </div>
+      )}
+
+      {/* Admin: Generate Standard Classes form */}
+      {showStandardForm && role === 'admin' && (
+        <div className="add-class-card card" style={{ borderColor: 'var(--color-orange)' }}>
+          <h3 className="card-title-sm" style={{ color: 'var(--color-orange)' }}>Genera Classi Standard — {displayDate}</h3>
+          <p className="text-muted" style={{ marginBottom: '16px', fontSize: '14px' }}>
+            Verranno generate 5 classi "CrossFit WOD" (12 posti) agli orari: 10:00, 14:30, 16:30, 18:45, 20:00.
+          </p>
+          <form className="add-class-form" onSubmit={(e) => { e.preventDefault(); handleGenerateStandardWODs(); }}>
+            <div className="form-row">
+              <div className="form-field" style={{ flex: 1 }}>
+                <label>Assegna WOD del Giorno (Opzionale)</label>
+                <select
+                  value={standardWodId}
+                  onChange={(e) => setStandardWodId(e.target.value)}
+                >
+                  <option value="">-- Nessun WOD associato --</option>
+                  {availableWods.map(w => (
+                    <option key={w.id} value={w.id}>{w.title} ({w.scheme || 'Misto'})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <button type="submit" className="primary-btn" disabled={actionLoading}>
+              {actionLoading ? 'Generazione in corso...' : 'Conferma Generazione'}
+            </button>
+          </form>
         </div>
       )}
 

@@ -242,11 +242,11 @@ export async function getUserBookings(userId) {
 export async function getBookingsForClass(classId) {
   const q = query(
     collection(db, 'bookings'),
-    where('classId', '==', classId),
-    where('status', '==', 'confirmed')
+    where('classId', '==', classId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const bookings = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return bookings.filter(b => b.status === 'confirmed' || b.status === 'checked_in');
 }
 
 export async function getUpcomingBooking(userId) {
@@ -256,7 +256,7 @@ export async function getUpcomingBooking(userId) {
   const snap = await getDocs(q);
   const upcoming = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
-    .filter((b) => b.status === 'confirmed' && b.date >= today)
+    .filter((b) => (b.status === 'confirmed' || b.status === 'checked_in') && b.date >= today)
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   return upcoming.length > 0 ? upcoming[0] : null;
 }
@@ -442,6 +442,14 @@ export async function addPayment(userId, paymentData, newExpirationDate) {
   if (newExpirationDate) {
     const updateData = { expirationDate: newExpirationDate };
     
+    if (paymentData.planKey === 'Pacchetto 12') {
+      updateData.entriesLeft = 12;
+    } else if (paymentData.planKey === 'Giornaliero') {
+      updateData.entriesLeft = 1;
+    } else if (paymentData.planKey) {
+      updateData.entriesLeft = null; // Unlimited for other plans
+    }
+    
     const expDate = new Date(newExpirationDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -452,6 +460,35 @@ export async function addPayment(userId, paymentData, newExpirationDate) {
     }
 
     await updateDoc(doc(db, 'users', userId), updateData);
+  }
+}
+
+export async function confirmCheckIn(bookingId, userId) {
+  // Update booking status
+  await updateDoc(doc(db, 'bookings', bookingId), {
+    status: 'checked_in',
+    checkedInAt: serverTimestamp()
+  });
+
+  if (userId) {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      const updates = { lastCheckIn: new Date().toISOString().split('T')[0] };
+      
+      // Deduct entry if entriesLeft is a number
+      if (typeof userData.entriesLeft === 'number') {
+        const newEntries = Math.max(0, userData.entriesLeft - 1);
+        updates.entriesLeft = newEntries;
+        // Optionally deactivate if no entries left
+        if (newEntries === 0) {
+          updates.status = 'Inattivo';
+        }
+      }
+      
+      await updateDoc(userRef, updates);
+    }
   }
 }
 

@@ -9,6 +9,7 @@ import {
   deleteClass,
   getBookingsForClass,
   getAllWODs,
+  confirmCheckIn,
 } from '../../services/firestoreService';
 import './Calendar.css';
 
@@ -172,8 +173,39 @@ export default function Calendar({ role }) {
   function changeDay(delta) {
     const next = new Date(currentDate);
     next.setDate(next.getDate() + delta);
+    
+    // Prevent member from seeing dates > 7 days in the future
+    if (role === 'member') {
+      const maxDate = new Date();
+      maxDate.setDate(maxDate.getDate() + 7);
+      maxDate.setHours(23, 59, 59, 999);
+      if (next > maxDate) {
+        showFeedback('error', 'Puoi prenotare al massimo con 7 giorni di anticipo.');
+        return;
+      }
+    }
+    
     setCurrentDate(next);
     setSelectedClass(null);
+  }
+
+  async function handleManualCheckIn(bookingId, userId) {
+    if (!window.confirm('Confermare check-in manuale per questo utente?')) return;
+    setActionLoading(true);
+    try {
+      await confirmCheckIn(bookingId, userId);
+      showFeedback('success', 'Check-in confermato.');
+      // Refresh bookings
+      setLoadingBookings(true);
+      const data = await getBookingsForClass(selectedClass.id);
+      setClassBookings(data);
+      setLoadingBookings(false);
+    } catch (err) {
+      console.error(err);
+      showFeedback('error', 'Errore durante il check-in.');
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   async function handleGenerateStandardWODs() {
@@ -493,9 +525,23 @@ export default function Calendar({ role }) {
                     ) : (
                       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {classBookings.map((b, i) => (
-                          <li key={b.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--color-text)' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', fontSize: '11px', color: 'var(--color-text-muted)' }}>{i + 1}</span>
-                            {b.userName || 'Utente senza nome'}
+                          <li key={b.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '14px', color: 'var(--color-text)', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', fontSize: '11px', color: 'var(--color-text-muted)' }}>{i + 1}</span>
+                              {b.userName || 'Utente senza nome'}
+                            </div>
+                            {b.status === 'checked_in' ? (
+                              <span style={{ fontSize: '11px', color: 'var(--color-orange)', border: '1px solid var(--color-orange)', padding: '2px 6px', borderRadius: '4px' }}>Check-in ✓</span>
+                            ) : (
+                              <button 
+                                className="primary-btn" 
+                                style={{ padding: '4px 8px', fontSize: '11px', margin: 0 }}
+                                onClick={() => handleManualCheckIn(b.id, b.userId)}
+                                disabled={actionLoading}
+                              >
+                                Fai Check-In
+                              </button>
+                            )}
                           </li>
                         ))}
                       </ul>

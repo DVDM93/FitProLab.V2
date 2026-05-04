@@ -168,6 +168,7 @@ export default function MemberDetail() {
         method: paymentForm.method,
         date: paymentForm.date,
         notes: paymentForm.notes,
+        planKey: paymentForm.planKey,
       }, paymentForm.newExpirationDate);
       
       setMember(prev => {

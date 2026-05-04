@@ -10,6 +10,7 @@ import MemberDashboard from './pages/MemberDashboard';
 import MembersList from './pages/Admin/MembersList';
 import Calendar from './pages/Shared/Calendar';
 import MemberDetail from './pages/Admin/MemberDetail';
+import Scanner from './pages/Admin/Scanner';
 import Communications from './pages/Admin/Communications';
 import Subscriptions from './pages/Admin/Subscriptions';
 import Wods from './pages/Admin/Wods';
@@ -39,6 +40,7 @@ function App() {
           <Route path="members" element={<MembersList />} />
           <Route path="members/:id" element={<MemberDetail />} />
           <Route path="calendar" element={<Calendar role="admin" />} />
+          <Route path="scanner" element={<Scanner />} />
           <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="communications" element={<Communications />} />
           <Route path="wods" element={<Wods />} />

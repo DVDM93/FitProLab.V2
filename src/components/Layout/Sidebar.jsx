@@ -42,6 +42,9 @@ export default function Sidebar({ view, isOpen, onClose }) {
             <Link to="/admin/calendar" className={`nav-link ${isActive('/admin/calendar')}`}>
               <span className="nav-icon">📅</span> Corsi & Calendario
             </Link>
+            <Link to="/admin/scanner" className={`nav-link ${isActive('/admin/scanner')}`}>
+              <span className="nav-icon">📱</span> Scanner Check-in
+            </Link>
             <Link to="/admin/subscriptions" className={`nav-link ${isActive('/admin/subscriptions')}`}>
               <span className="nav-icon">💳</span> Abbonamenti
             </Link>

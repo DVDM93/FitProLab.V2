@@ -99,7 +99,7 @@ export default function Calendar({ role }) {
       setSelectedClass(null);
     } catch (err) {
       console.error(err);
-      showFeedback('error', 'Errore durante la prenotazione. Riprova.');
+      showFeedback('error', err.message || 'Errore durante la prenotazione. Riprova.');
     } finally {
       setActionLoading(false);
     }

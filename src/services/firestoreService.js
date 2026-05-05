@@ -262,6 +262,45 @@ export async function getUpcomingBooking(userId) {
 }
 
 export async function bookClass(userId, classData, userName = '') {
+  // 1. Fetch user to check plan limits
+  const userSnap = await getDoc(doc(db, 'users', userId));
+  if (userSnap.exists()) {
+    const userPlan = userSnap.data().plan || 'Basic';
+    let weeklyLimit = null;
+    
+    if (userPlan === 'Basic' || userPlan === 'Weightlifting Basic') {
+      weeklyLimit = 3;
+    } else if (userPlan === 'Pro' || userPlan === 'Weightlifting Pro') {
+      weeklyLimit = 5;
+    }
+    
+    if (weeklyLimit !== null) {
+      // Get week boundaries for classData.date
+      const classDate = new Date(classData.date);
+      classDate.setHours(12, 0, 0, 0);
+      const day = classDate.getDay() || 7; // 1 = Monday, 7 = Sunday
+      
+      const startOfWeek = new Date(classDate);
+      startOfWeek.setDate(classDate.getDate() - day + 1);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      
+      const startStr = startOfWeek.toISOString().split('T')[0];
+      const endStr = endOfWeek.toISOString().split('T')[0];
+      
+      // Fetch user's bookings to check limit
+      const q = query(collection(db, 'bookings'), where('userId', '==', userId));
+      const bookingsSnap = await getDocs(q);
+      const bookingsThisWeek = bookingsSnap.docs
+        .map(d => d.data())
+        .filter(b => b.status !== 'cancelled' && b.date >= startStr && b.date <= endStr);
+        
+      if (bookingsThisWeek.length >= weeklyLimit) {
+        throw new Error(`Hai raggiunto il limite di ${weeklyLimit} classi per questa settimana.`);
+      }
+    }
+  }
+
   const booking = await addDoc(collection(db, 'bookings'), {
     userId,
     userName,

@@ -133,17 +133,20 @@ export default function AdminDashboard() {
 
       {/* Quick actions */}
       <div className="quick-actions-row">
+        <Link to="/admin/scanner" className="quick-action-btn">
+          <span>📱</span> Scanner QR
+        </Link>
         <Link to="/admin/calendar" className="quick-action-btn">
-          <span>📅</span> Aggiungi Classe
+          <span>📅</span> Calendario
         </Link>
         <Link to="/admin/members" className="quick-action-btn">
-          <span>👥</span> Lista Membri
+          <span>👥</span> Membri
         </Link>
         <Link to="/admin/communications" className="quick-action-btn">
-          <span>📣</span> Invia Messaggio
+          <span>📣</span> Messaggi
         </Link>
         <Link to="/admin/subscriptions" className="quick-action-btn">
-          <span>💳</span> Abbonamenti
+          <span>💳</span> Piani
         </Link>
       </div>
 

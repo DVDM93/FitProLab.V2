@@ -1,0 +1,45 @@
+.add-member-modal {
+  background-color: var(--bg-card);
+  border-radius: 12px;
+  padding: 32px;
+  width: 100%;
+  max-width: 450px;
+  position: relative;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  animation: modal-fade-in 0.3s ease-out;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.modal-subtitle {
+  margin: 8px 0 24px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.add-member-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-error {
+  background-color: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 68, 68, 0.2);
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

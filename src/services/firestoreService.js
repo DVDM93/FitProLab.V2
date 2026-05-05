@@ -186,6 +186,38 @@ export async function updateMember(uid, data) {
   await updateDoc(doc(db, 'users', uid), data);
 }
 
+export async function deleteMember(uid) {
+  // 1. Profilo utente
+  await deleteDoc(doc(db, 'users', uid));
+  
+  // 2. Documenti utente
+  try {
+    await deleteDoc(doc(db, 'user_documents', uid));
+  } catch (e) {
+    console.log("Nessun doc da eliminare");
+  }
+
+  // Helper per cancellare tutti i documenti trovati da una query
+  const deleteQueryDocs = async (collName) => {
+    const q = query(collection(db, collName), where('userId', '==', uid));
+    const snap = await getDocs(q);
+    const deletePromises = snap.docs.map(d => deleteDoc(doc(db, collName, d.id)));
+    await Promise.all(deletePromises);
+  };
+
+  // 3. Prenotazioni
+  await deleteQueryDocs('bookings');
+  
+  // 4. Pagamenti
+  await deleteQueryDocs('payments');
+  
+  // 5. Punteggi / PR
+  await deleteQueryDocs('scores');
+  
+  // 6. Check-ins
+  await deleteQueryDocs('checkins');
+}
+
 export async function getActiveMemberCount() {
   // Fetch all members, filter in JS — no composite index
   const members = await getAllMembers();
@@ -200,6 +232,20 @@ export async function getAtRiskMembers() {
     if (m.status !== 'Attivo') return false;
     if (!m.lastCheckIn) return true;
     return new Date(m.lastCheckIn) < cutoff;
+  });
+}
+
+export async function getExpiringMembers(daysLeft) {
+  const members = await getAllMembers();
+  const targetDate = new Date();
+  targetDate.setDate(targetDate.getDate() + daysLeft);
+  targetDate.setHours(0, 0, 0, 0);
+
+  return members.filter((m) => {
+    if (m.status !== 'Attivo' || !m.expirationDate) return false;
+    const expDate = new Date(m.expirationDate);
+    expDate.setHours(0, 0, 0, 0);
+    return expDate.getTime() === targetDate.getTime();
   });
 }
 

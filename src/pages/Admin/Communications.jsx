@@ -9,12 +9,12 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { getAllMembers, getAtRiskMembers } from '../../services/firestoreService';
 import './Communications.css';
 
 const CHANNEL_OPTIONS = [
   { key: 'email', label: '✉️ E-Mail' },
-  { key: 'push', label: '🔔 Push' },
-  { key: 'sms', label: '📱 SMS' },
+  { key: 'whatsapp', label: '💬 WhatsApp' },
 ];
 
 const TARGET_OPTIONS = [
@@ -44,6 +44,7 @@ export default function Communications() {
   const [campaigns, setCampaigns] = useState([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(true);
   const [feedback, setFeedback] = useState(null);
+  const [whatsappLinks, setWhatsappLinks] = useState([]);
 
   // Load recent campaigns
   useEffect(() => {
@@ -76,6 +77,56 @@ export default function Communications() {
     setSending(true);
     try {
       const targetLabel = TARGET_OPTIONS.find((t) => t.value === target)?.label || target;
+      
+      let recipients = [];
+      if (target === 'all') {
+        recipients = await getAllMembers();
+      } else if (target === 'expiring') {
+        const all = await getAllMembers();
+        const now = new Date();
+        const nextWeek = new Date();
+        nextWeek.setDate(now.getDate() + 7);
+        recipients = all.filter(m => {
+          if (!m.expirationDate) return false;
+          const ed = new Date(m.expirationDate);
+          return ed >= now && ed <= nextWeek;
+        });
+      } else if (target === 'churn') {
+        recipients = await getAtRiskMembers();
+      }
+
+      if (channel === 'email') {
+        const emails = recipients.map(r => r.email).filter(Boolean).join(',');
+        if (emails) {
+          window.location.href = `mailto:?bcc=${emails}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+        } else {
+          showFeedback('error', 'Nessuna email trovata per questo gruppo.');
+          setSending(false);
+          return;
+        }
+      } else if (channel === 'whatsapp') {
+        const links = recipients.filter(r => r.phone).map(r => {
+          let phoneStr = r.phone.replace(/[^0-9]/g, '');
+          if (phoneStr && !phoneStr.startsWith('39') && phoneStr.length <= 10) {
+            phoneStr = '39' + phoneStr;
+          }
+          return {
+            id: r.id,
+            name: r.name || r.email,
+            url: `https://wa.me/${phoneStr}?text=${encodeURIComponent(message)}`
+          };
+        });
+        
+        if (links.length > 0) {
+          setWhatsappLinks(links);
+          showFeedback('success', `Generati ${links.length} link WhatsApp.`);
+        } else {
+          showFeedback('error', 'Nessun numero di telefono trovato.');
+          setSending(false);
+          return;
+        }
+      }
+
       const newCampaign = {
         channel,
         target,
@@ -92,10 +143,12 @@ export default function Communications() {
         ...prev,
       ]);
 
-      // Reset form
-      setSubject('');
-      setMessage('');
-      const channelLabel = channel === 'email' ? 'E-Mail' : channel === 'push' ? 'Notifica Push' : 'SMS';
+      // Reset form if email (whatsapp needs the links visible)
+      if (channel === 'email') {
+        setSubject('');
+        setMessage('');
+      }
+      const channelLabel = channel === 'email' ? 'E-Mail' : 'WhatsApp';
       showFeedback('success', `${channelLabel} inviata a "${targetLabel}" ✓`);
     } catch (err) {
       console.error('Errore invio campagna:', err);
@@ -105,7 +158,7 @@ export default function Communications() {
     }
   }
 
-  const channelLabel = channel === 'email' ? 'E-Mail' : channel === 'push' ? 'Notifica' : 'SMS';
+  const channelLabel = channel === 'email' ? 'E-Mail' : 'WhatsApp';
 
   return (
     <div className="communications-container">
@@ -188,9 +241,36 @@ export default function Communications() {
               className="primary-btn max-w"
               disabled={sending || !message.trim()}
             >
-              {sending ? 'Invio in corso...' : `Invia ${channelLabel} Ora`}
+              {sending ? 'Elaborazione in corso...' : `Invia / Genera Link ${channelLabel}`}
             </button>
           </form>
+
+          {whatsappLinks.length > 0 && channel === 'whatsapp' && (
+            <div style={{ marginTop: '24px', padding: '16px', backgroundColor: 'var(--bg-lighter)', borderRadius: '8px' }}>
+              <h4 style={{ marginBottom: '12px' }}>Link WhatsApp Generati</h4>
+              <p className="text-muted" style={{ marginBottom: '16px', fontSize: '0.9rem' }}>
+                Clicca su ciascun nome per aprire WhatsApp e inviare il messaggio.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {whatsappLinks.map(link => (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="secondary-btn"
+                    style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between' }}
+                    onClick={(e) => {
+                      e.currentTarget.style.opacity = '0.5';
+                    }}
+                  >
+                    <span>{link.name}</span>
+                    <span>Invia ↗</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* History */}
@@ -215,7 +295,7 @@ export default function Communications() {
                 <li key={c.id} style={{ borderLeftColor: BORDER_COLORS[idx % BORDER_COLORS.length] }}>
                   <div className="campaign-info">
                     <div className="campaign-channel-tag">
-                      {c.channel === 'email' ? '✉️' : c.channel === 'push' ? '🔔' : '📱'}
+                      {c.channel === 'email' ? '✉️' : '💬'}
                       <span>{c.channel.toUpperCase()}</span>
                     </div>
                     <h4>{c.subject || c.message?.slice(0, 50) + (c.message?.length > 50 ? '…' : '')}</h4>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllMembers } from '../../services/firestoreService';
+import AddMemberModal from '../../components/AddMemberModal';
 import './Members.css';
 
 export default function MembersList() {
@@ -9,18 +10,21 @@ export default function MembersList() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPlan, setFilterPlan] = useState('all');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  async function fetchMembers() {
+    setLoading(true);
+    try {
+      const data = await getAllMembers();
+      setMembers(data);
+    } catch (error) {
+      console.error('Errore nel recuperare i membri:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function fetchMembers() {
-      try {
-        const data = await getAllMembers();
-        setMembers(data);
-      } catch (error) {
-        console.error('Errore nel recuperare i membri:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchMembers();
   }, []);
 
@@ -52,6 +56,9 @@ export default function MembersList() {
             {loading ? 'Caricamento...' : `${filtered.length} di ${members.length} iscritti`}
           </p>
         </div>
+        <button className="primary-btn" onClick={() => setIsAddModalOpen(true)}>
+          + Aggiungi Membro
+        </button>
       </div>
 
       <div className="table-toolbar">
@@ -172,6 +179,12 @@ export default function MembersList() {
           </tbody>
         </table>
       </div>
+
+      <AddMemberModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onMemberAdded={fetchMembers} 
+      />
     </div>
   );
 }

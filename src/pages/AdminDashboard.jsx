@@ -6,6 +6,7 @@ import {
   getAtRiskMembers,
   getClassesForDate,
   getRecentActivity,
+  getExpiringMembers,
 } from '../services/firestoreService';
 import './Dashboard.css';
 
@@ -37,6 +38,7 @@ export default function AdminDashboard() {
   const [todayClasses, setTodayClasses] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [atRiskMembers, setAtRiskMembers] = useState([]);
+  const [expiringMembers, setExpiringMembers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const today = new Date().toISOString().split('T')[0];
@@ -44,12 +46,13 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const [activeMembers, todayCheckins, riskMembers, classes, activity] = await Promise.all([
+        const [activeMembers, todayCheckins, riskMembers, classes, activity, expiring] = await Promise.all([
           getActiveMemberCount(),
           getTodayCheckInCount(),
           getAtRiskMembers(),
           getClassesForDate(today),
           getRecentActivity(5),
+          getExpiringMembers(3), // Members expiring in exactly 3 days
         ]);
 
         setStats({
@@ -60,6 +63,7 @@ export default function AdminDashboard() {
         setTodayClasses(classes);
         setRecentActivity(activity);
         setAtRiskMembers(riskMembers.slice(0, 3));
+        setExpiringMembers(expiring);
       } catch (error) {
         console.error('Errore caricamento dashboard:', error);
       } finally {
@@ -238,6 +242,49 @@ export default function AdminDashboard() {
                   <span className="at-risk-badge">inattivo</span>
                 </Link>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Reminder Scadenze */}
+        <div className="card">
+          <h3 className="card-title">Reminder Scadenze (-3 Giorni)</h3>
+          {loading ? (
+            <p className="text-muted">Caricamento...</p>
+          ) : expiringMembers.length === 0 ? (
+            <p className="text-muted">Nessun membro in scadenza tra 3 giorni.</p>
+          ) : (
+            <div className="at-risk-section" style={{ marginTop: 0 }}>
+              {expiringMembers.map((m) => {
+                const waMessage = encodeURIComponent(`Ciao ${m.name || ''}, ti ricordiamo che il tuo abbonamento FitProLab scade tra 3 giorni. Passa in reception per rinnovarlo!`);
+                let phoneStr = m.phone ? m.phone.replace(/[^0-9]/g, '') : '';
+                if (phoneStr && !phoneStr.startsWith('39') && phoneStr.length <= 10) {
+                  phoneStr = '39' + phoneStr;
+                }
+                const waLink = phoneStr ? `https://wa.me/${phoneStr}?text=${waMessage}` : null;
+                const emailLink = m.email ? `mailto:${m.email}?subject=Scadenza Abbonamento FitProLab&body=${waMessage}` : null;
+
+                return (
+                  <div key={m.id} className="at-risk-item" style={{ cursor: 'default', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span className="at-risk-avatar">{(m.name || '?').charAt(0).toUpperCase()}</span>
+                      <span className="at-risk-name">{m.name || m.email}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {waLink && (
+                        <a href={waLink} target="_blank" rel="noopener noreferrer" className="secondary-btn" style={{ padding: '4px 8px', fontSize: '0.8rem', minWidth: 'auto', backgroundColor: '#25D366', color: '#fff', border: 'none' }}>
+                          WhatsApp
+                        </a>
+                      )}
+                      {emailLink && (
+                        <a href={emailLink} className="secondary-btn" style={{ padding: '4px 8px', fontSize: '0.8rem', minWidth: 'auto' }}>
+                          Email
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

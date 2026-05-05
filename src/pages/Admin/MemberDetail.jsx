@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getUserData, getUserBookings, getUserScores, updateMember, getUserPayments, addPayment, uploadUserDocument, getUserDocuments, deleteUserDocument, getSubscriptionPlans } from '../../services/firestoreService';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { getUserData, getUserBookings, getUserScores, updateMember, deleteMember, getUserPayments, addPayment, uploadUserDocument, getUserDocuments, deleteUserDocument, getSubscriptionPlans } from '../../services/firestoreService';
 import './MemberDetail.css';
 
 export default function MemberDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [member, setMember] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [scores, setScores] = useState([]);
@@ -75,6 +76,21 @@ export default function MemberDetail() {
     if (!window.confirm('Sei sicuro di voler disattivare questo membro?')) return;
     await updateMember(id, { status: 'Inattivo' });
     setMember((prev) => ({ ...prev, status: 'Inattivo' }));
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('ATTENZIONE: Stai per eliminare definitivamente questo membro dal database.\n\nTutti i pagamenti, le prenotazioni e i documenti verranno cancellati in modo irreversibile.\n\nSei assolutamente sicuro?')) return;
+    if (!window.confirm('CONFERMA FINALE: Confermi di voler procedere con l\'eliminazione totale di tutti i dati?')) return;
+    
+    setLoading(true);
+    try {
+      await deleteMember(id);
+      navigate('/admin/members', { replace: true });
+    } catch (error) {
+      console.error('Errore durante l\'eliminazione:', error);
+      alert('Si è verificato un errore durante l\'eliminazione.');
+      setLoading(false);
+    }
   }
 
   async function handleFileUpload(e, type) {
@@ -264,7 +280,8 @@ export default function MemberDetail() {
           ) : (
             <>
               <button className="secondary-btn" onClick={() => setEditing(true)}>Modifica Profilo</button>
-              <button className="danger-btn" onClick={handleDeactivate}>Disattiva</button>
+              <button className="secondary-btn" onClick={handleDeactivate}>Disattiva</button>
+              <button className="danger-btn" onClick={handleDelete} title="Elimina definitivamente">Elimina</button>
             </>
           )}
         </div>

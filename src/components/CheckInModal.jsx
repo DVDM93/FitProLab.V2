@@ -1,5 +1,5 @@
 import React from 'react';
-import QRCode from 'react-qr-code';
+import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../contexts/AuthContext';
 import './CheckInModal.css';
 
@@ -32,8 +32,8 @@ export default function CheckInModal({ isOpen, onClose }) {
 
         <div className="qr-container">
           <div className="qr-wrapper">
-            <QRCode
-              value={qrValue}
+            <QRCodeSVG 
+              value={qrValue} 
               size={210}
               bgColor="#ffffff"
               fgColor="#0b0b0b"

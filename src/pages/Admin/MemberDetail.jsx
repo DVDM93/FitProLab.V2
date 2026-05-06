@@ -198,7 +198,12 @@ export default function MemberDetail() {
             newStatus = 'Attivo';
           }
         }
-        return { ...prev, expirationDate: paymentForm.newExpirationDate || prev.expirationDate, status: newStatus };
+        return { 
+          ...prev, 
+          expirationDate: paymentForm.newExpirationDate || prev.expirationDate, 
+          status: newStatus,
+          ...(paymentForm.planKey ? { plan: paymentForm.planKey } : {})
+        };
       });
       const newPayments = await getUserPayments(id);
       setPayments(newPayments);
@@ -370,6 +375,18 @@ export default function MemberDetail() {
               <div className="sub-row">
                 <span className="text-muted">Ultimo Check-in</span>
                 <strong>{new Date(member.lastCheckIn).toLocaleDateString('it-IT')}</strong>
+              </div>
+            )}
+            <div className="sub-row">
+              <span className="text-muted">Ingressi Effettuati (Totali)</span>
+              <strong>{bookings.filter(b => b.status === 'checked_in').length}</strong>
+            </div>
+            {typeof member.entriesLeft === 'number' && (
+              <div className="sub-row">
+                <span className="text-muted">Ingressi Rimanenti</span>
+                <strong className={member.entriesLeft <= 2 ? 'text-danger' : 'text-ok'}>
+                  {member.entriesLeft}
+                </strong>
               </div>
             )}
             <div className="sub-row mt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>

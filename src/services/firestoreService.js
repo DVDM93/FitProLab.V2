@@ -524,16 +524,12 @@ export async function addPayment(userId, paymentData, newExpirationDate) {
     createdAt: serverTimestamp(),
   });
 
+  const updateData = {};
+  let shouldUpdateUser = false;
+
   if (newExpirationDate) {
-    const updateData = { expirationDate: newExpirationDate };
-    
-    if (paymentData.planKey === 'Pacchetto 12') {
-      updateData.entriesLeft = 12;
-    } else if (paymentData.planKey === 'Giornaliero') {
-      updateData.entriesLeft = 1;
-    } else if (paymentData.planKey) {
-      updateData.entriesLeft = null; // Unlimited for other plans
-    }
+    updateData.expirationDate = newExpirationDate;
+    shouldUpdateUser = true;
     
     const expDate = new Date(newExpirationDate);
     const today = new Date();
@@ -543,7 +539,22 @@ export async function addPayment(userId, paymentData, newExpirationDate) {
     if (expDate >= today) {
       updateData.status = 'Attivo';
     }
+  }
 
+  if (paymentData.planKey) {
+    updateData.plan = paymentData.planKey;
+    shouldUpdateUser = true;
+
+    if (paymentData.planKey === 'Pacchetto 12') {
+      updateData.entriesLeft = 12;
+    } else if (paymentData.planKey === 'Giornaliero') {
+      updateData.entriesLeft = 1;
+    } else {
+      updateData.entriesLeft = null; // Unlimited for other plans
+    }
+  }
+
+  if (shouldUpdateUser) {
     await updateDoc(doc(db, 'users', userId), updateData);
   }
 }

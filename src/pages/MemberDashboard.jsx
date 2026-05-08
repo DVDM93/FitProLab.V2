@@ -133,7 +133,7 @@ export default function MemberDashboard() {
         </div>
 
         {/* Prossima prenotazione */}
-        <div className="card schedule-card">
+        <div className="card member-schedule-card">
           <h3 className="card-title">Il Mio Prossimo Corso</h3>
           {loading ? (
             <div className="loading-state">

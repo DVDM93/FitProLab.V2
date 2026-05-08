@@ -3,7 +3,8 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  sendEmailVerification
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -25,6 +26,12 @@ export function AuthProvider({ children }) {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
+    try {
+      await sendEmailVerification(user);
+    } catch (err) {
+      console.error('Errore durante l\'invio dell\'email di verifica:', err);
+    }
+    
     const newUserData = {
       name,
       email,
@@ -37,8 +44,8 @@ export function AuthProvider({ children }) {
 
     await setDoc(doc(db, 'users', user.uid), newUserData);
 
-    setUserRole(role);
-    setUserData(newUserData);
+    await signOut(auth);
+    
     return user;
   }
 

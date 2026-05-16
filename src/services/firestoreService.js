@@ -13,8 +13,7 @@ import {
   limit,
   serverTimestamp,
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../config/firebase';
+import { db } from '../config/firebase';
 
 export const DEFAULT_PLANS = [
   {
@@ -193,7 +192,7 @@ export async function deleteMember(uid) {
   // 2. Documenti utente
   try {
     await deleteDoc(doc(db, 'user_documents', uid));
-  } catch (e) {
+  } catch {
     console.log("Nessun doc da eliminare");
   }
 

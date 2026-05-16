@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Funzione per verificare se l'utente è autenticato
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Funzione per verificare se l'utente è un amministratore
+    function isAdmin() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ─── UTENTI ──────────────────────────────────────────
+    match /users/{userId} {
+      // Ogni utente può leggere il proprio profilo, gli admin possono leggere tutti
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // L'utente può creare il proprio documento in fase di registrazione
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      // L'utente può aggiornare i propri dati (es. profilo), gli admin possono aggiornare tutti
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Solo gli admin possono eliminare gli utenti
+      allow delete: if isAdmin();
+    }
+
+    // ─── DOCUMENTI UTENTI ────────────────────────────────
+    match /user_documents/{userId} {
+      allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // ─── CLASSI / CORSI ──────────────────────────────────
+    match /classes/{classId} {
+      // Tutti gli utenti registrati possono vedere le classi
+      allow read: if isAuthenticated();
+      // I membri possono aggiornare SOLO il contatore "booked" quando si prenotano
+      // Gli admin hanno permessi completi di scrittura
+      allow update: if isAdmin() || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['booked']));
+      allow create, delete: if isAdmin();
+    }
+
+    // ─── PRENOTAZIONI (BOOKINGS) ─────────────────────────
+    match /bookings/{bookingId} {
+      // Gli utenti leggono le loro prenotazioni, gli admin vedono tutto
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      // Gli utenti possono prenotare solo per se stessi, gli admin per tutti
+      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      // Gli utenti possono annullare (update status) o eliminare le loro prenotazioni
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // ─── CHECK-INS ───────────────────────────────────────
+    match /checkins/{checkinId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAdmin() || (isAuthenticated() && request.resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // ─── PUNTEGGI E LEADERBOARD ──────────────────────────
+    match /scores/{scoreId} {
+      // La leaderboard richiede che tutti i punteggi siano leggibili dagli utenti autenticati
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // ─── WODS ────────────────────────────────────────────
+    match /wods/{wodId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ─── PAGAMENTI ───────────────────────────────────────
+    match /payments/{paymentId} {
+      // Gli utenti possono leggere il loro storico pagamenti, gli admin possono leggere tutti
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      // I pagamenti sono generati solo dall'admin
+      allow write: if isAdmin();
+    }
+
+    // ─── IMPOSTAZIONI ────────────────────────────────────
+    match /settings/{docId} {
+      // Tutti gli utenti possono leggere le impostazioni (es. piani disponibili)
+      allow read: if isAuthenticated();
+      // Solo l'admin può modificare le impostazioni
+      allow write: if isAdmin();
+    }
+  }
+}

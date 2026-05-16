@@ -9,7 +9,7 @@
   --color-magenta: #ff007f;
   --color-text: #f5f5f5;
   --color-text-muted: #a3a3a3;
-  
+
   --font-main: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   --border-radius: 12px;
   --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
@@ -70,7 +70,12 @@ button.secondary:hover {
   color: var(--color-orange);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   margin-bottom: 0.5em;
   font-weight: 800;
 }
@@ -112,13 +117,16 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--color-black);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--color-dark);
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
 }
@@ -126,6 +134,7 @@ h1, h2, h3, h4, h5, h6 {
 /* ── Global Responsive ─────────────────────────────────── */
 
 @media (max-width: 1024px) {
+
   /* Dashboard two-column → single column */
   .content-grid.two-cols {
     grid-template-columns: 1fr !important;
@@ -148,6 +157,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 768px) {
+
   /* Page titles */
   .title {
     font-size: 24px !important;
@@ -233,4 +243,3 @@ h1, h2, h3, h4, h5, h6 {
     min-width: 100%;
   }
 }
-

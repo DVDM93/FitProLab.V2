@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import logoImg from '../assets/logo.png';
 import './Login.css';
 
 export default function Login() {
@@ -67,7 +68,7 @@ export default function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-logo-container">
-          <img src="/src/assets/logo.png" alt="Fit Pro Lab Logo" className="logo-image" />
+          <img src={logoImg} alt="Fit Pro Lab Logo" className="logo-image" />
           <h1 className="login-logo">FIT PRO<span className="text-orange"></span> LAB</h1>
         </div>
         <h2 className="login-title">{isLogin ? 'Accedi al tuo account' : 'Crea un nuovo account'}</h2>

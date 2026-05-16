@@ -95,7 +95,7 @@ export default function AdminDashboard() {
       {/* Stats grid */}
       <div className="stats-grid">
         <StatCard
-          label="Membri Attivi"
+          label="Membri Attivia"
           icon="👥"
           value={stats.activeMembers ?? '—'}
           trend={stats.activeMembers !== null ? `${stats.activeMembers} iscritti attivi` : null}

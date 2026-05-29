@@ -134,24 +134,24 @@ export default function MembersList() {
             ) : (
               filtered.map((member) => (
                 <tr key={member.id}>
-                  <td className="font-bold">{member.name || '—'}</td>
-                  <td className="text-muted">{member.email}</td>
-                  <td>
+                  <td className="font-bold" data-label="Nome">{member.name || '—'}</td>
+                  <td className="text-muted" data-label="Email">{member.email}</td>
+                  <td data-label="Piano">
                     <span className={`plan-badge plan-${(member.plan || 'Basic').toLowerCase().replace(/\s/g, '-')}`}>
                       {member.plan || 'Basic'}
                     </span>
                   </td>
-                  <td className="text-muted">
+                  <td className="text-muted" data-label="Iscrizione">
                     {member.joinDate
                       ? new Date(member.joinDate).toLocaleDateString('it-IT')
                       : '—'}
                   </td>
-                  <td className="text-muted">
+                  <td className="text-muted" data-label="Ultimo Check-in">
                     {member.lastCheckIn
                       ? new Date(member.lastCheckIn).toLocaleDateString('it-IT')
                       : <span className="no-checkin">Mai</span>}
                   </td>
-                  <td>
+                  <td data-label="Stato">
                     <span
                       className={`status-indicator ${
                         member.status === 'Attivo'
@@ -164,7 +164,7 @@ export default function MembersList() {
                       {member.status || 'Attivo'}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Azioni">
                     <Link
                       to={`/admin/members/${member.id}`}
                       className="icon-btn"

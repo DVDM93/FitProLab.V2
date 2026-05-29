@@ -266,30 +266,29 @@
   }
   
   .members-table td {
-    padding: 8px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
     text-align: right;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-    position: relative;
-    padding-left: 50%;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   }
   
   .members-table td:last-child {
     border-bottom: none;
-    text-align: center;
-    padding-left: 0;
+    justify-content: center;
+    padding-bottom: 0;
     margin-top: 8px;
   }
   
   .members-table td::before {
     content: attr(data-label);
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
     font-weight: 600;
     color: var(--color-text-muted);
     font-size: 12px;
     text-transform: uppercase;
+    text-align: left;
+    margin-right: 16px;
   }
 
   .members-table td:last-child::before {
